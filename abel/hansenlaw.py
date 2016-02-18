@@ -89,7 +89,7 @@ _hansenlaw_transform_docstring = \
                           
              Image centre `o' should be within a pixel 
              (i.e. an odd number of columns)
-             [Use abel.tools.vmi.find_image_center_by_slice () to transform] 
+             [Use abel.tools.center.find_image_center_by_slice () to transform] 
 
     dr : float
         Sampling size (=1 for pixel images), used for Jacobian scaling
