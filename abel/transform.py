@@ -93,7 +93,8 @@ def transform(IM, direction='inverse', method='three_point', center='none', verb
            inverse image   AQ | AQ       
                            ---o---  all quadrants equivalent
                            AQ | AQ
-    
+       ::
+
     transform_options : tuple
         Additional arguments to be passed to the individual transform functions. 
         See the documentation for the individual transform method for options.
