@@ -52,6 +52,7 @@ class AbelTiming(object):
             'direct_Python': direct.direct_transform,
             'direct_C': direct.direct_transform,
             'hansenlaw': hansenlaw.hansenlaw_transform,
+            'hansenlaw_bs': hansenlaw._bs_hansenlaw,
             'onion_bordas': onion_bordas.onion_bordas_transform,
             'onion_peeling': dasch.dasch_transform,
             'onion_peeling_bs': dasch._bs_onion_peeling,
@@ -63,8 +64,9 @@ class AbelTiming(object):
 
         # result dicts
         res = {}
-        res['bs'] = {'basex_bs': [], 'onion_peeling_bs': [], 
-                     'two_point_bs': [], 'three_point_bs': []}
+        res['bs'] = {'basex_bs': [], 'hansenlaw_bs': [],
+                     'onion_peeling_bs': [], 'two_point_bs': [],
+                     'three_point_bs': []}
         res['forward'] = {'direct_Python': [], 'hansenlaw': []}
         res['inverse'] = {'basex': [], 'direct_Python': [], 'hansenlaw': [],
                           'onion_bordas': [], 'onion_peeling': [],
@@ -109,7 +111,8 @@ class AbelTiming(object):
                         # calculate and store basex basis matrix
                         t = time.time()
                         basis[method[:-3]] = transform[method](ni, ni,
-                                                       basis_dir=None)
+                                                       basis_dir=None,
+                                                       direction="inverse")
                         res['bs'][method].append((time.time()-t)*1000)
                     else:
                         basis[method[:-3]] = None,
@@ -118,7 +121,8 @@ class AbelTiming(object):
                     # calculate and store basis matrix
                     t = time.time()
                     # store basis calculation. NB a tuple to accomodate basex
-                    basis[method[:-3]] = transform[method](ni), 
+                    basis[method[:-3]] = transform[method](ni,
+                                                   direction="inverse"), 
                     res['bs'][method].append((time.time()-t)*1000)
 
             # Abel transforms ---------------

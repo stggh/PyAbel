@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import abel
 from time import time
 from math import exp, log, pow, pi
 
@@ -107,6 +108,57 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
     AIM = np.zeros(N)        # forward/inverse Abel transform image
 
     rows, cols = N
+    if direction == "inverse":   # inverse transform
+        # g' - derivative of the intensity profile
+        if rows > 1:
+            gp = np.gradient(IM)[1]
+            # second element is gradient along the columns
+        else:  # If there is only one row
+            gp = np.atleast_2d(np.gradient(IM[0]))
+    else:  # forward transform
+        gp = IM
+
+    # ------ The Hansen and Law algorithm ------------
+    # iterate along columns, starting outer edge (right side)
+    # toward the image center
+
+    Phi, Gamma = abel.tools.basis.get_bs_cached("hansenlaw", rows, cols,
+                                                direction=direction)
+
+    K = Phi.shape[1]
+    nn = np.arange(cols-2, 0, -1, dtype=int)
+    X = np.zeros((K, rows))
+    # Eq. (15) forward, or (17) inverse
+    for i, n in enumerate(nn):
+        X = np.dot(Phi[i], X) + Gamma[i]*gp[:, n]
+        AIM[:, n] = X.sum(axis=0)
+
+    # center pixel column
+    AIM[:, 0] = AIM[:, 1]
+
+    if AIM.shape[0] == 1:
+        AIM = AIM[0]   # flatten to a vector
+
+    if direction == "inverse":
+        return AIM*np.pi/dr    # 1/dr - from derivative
+    else:
+        return -AIM*np.pi*dr   # forward still needs '-' sign
+
+
+def _bs_hansenlaw(rows, cols, direction="inverse"):
+    """basis functions for hansenlaw.
+
+    Parameters
+    ----------
+    cols : int
+        width of the image
+
+    Returns
+    -------
+    D: numpy 2D array tuples
+       basis operators as a 2d tuple array D = (Phi, Gamma)
+
+    """
 
     # Two alternative Gamma functions for forward/inverse transform
     # Eq. (16c) used for the forward transform
@@ -124,20 +176,8 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
         gammagt = igammagt   # special case lam = 0.0
         gammalt = igammalt   # lam < 0.0
 
-        # g' - derivative of the intensity profile
-        if rows > 1:
-            gp = np.gradient(IM)[1]
-            # second element is gradient along the columns
-        else:  # If there is only one row
-            gp = np.atleast_2d(np.gradient(IM[0]))
-
     else:  # forward transform
         gammagt = gammalt = fgamma
-        gp = IM
-
-    # ------ The Hansen and Law algorithm ------------
-    # iterate along columns, starting outer edge (right side)
-    # toward the image center
 
     # constants listed in Table 1.
     h = np.array([0.318, 0.19, 0.35, 0.82, 1.8, 3.9, 8.3, 19.6, 48.3])
@@ -146,13 +186,9 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     K = np.size(h)
     nn = np.arange(cols-2, 0, -1, dtype=int)
-
-    Nm = (nn+1)/nn          # R0/R
-    len_Nm = len(Nm)
-
-    X = np.zeros((K, rows))
-    Gamma = np.zeros((len_Nm, K, 1))
-    Phi = np.zeros((len_Nm, K, K))
+    Nm = (nn+1)/nn  # R0/R
+    Gamma = np.zeros((cols-2, K, 1))
+    Phi = np.zeros((cols-2, K, K))
 
     # Gamma_n and Phi_n  Eq. (16a) and (16b)
     # lam = 0.0
@@ -163,18 +199,6 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
         Gamma[:, k, 0] = h[k]*gammalt(Nm, lam[k], nn)  
         Phi[:, k, k] = np.power(Nm, lam[k])   # diagonal matrix Eq. (16a)
 
-    # Eq. (15) forward, or (17) inverse
-    for i, n in enumerate(nn):
-        X = np.dot(Phi[i], X) + Gamma[i]*gp[:, n]
-        AIM[:, n] = X.sum(axis=0)
+    return (Phi, Gamma)
 
-    # center pixel column
-    AIM[:, 0] = AIM[:, 1]
 
-    if AIM.shape[0] == 1:
-        AIM = AIM[0]   # flatten to a vector
-
-    if direction == "inverse":
-        return AIM*np.pi/dr    # 1/dr - from derivative
-    else:
-        return -AIM*np.pi*dr   # forward still needs '-' sign
