@@ -51,7 +51,7 @@ class AbelTiming(object):
             'basex_bs': basex.get_bs_basex_cached,
             'direct_Python': direct.direct_transform,
             'direct_C': direct.direct_transform,
-            'hansenlaw': hansenlaw.hansenlaw_transform,
+            'hansenlaw': hansenlaw.hansenlaw_transform_with_basis,
             'hansenlaw_bs': hansenlaw._bs_hansenlaw,
             'onion_bordas': onion_bordas.onion_bordas_transform,
             'onion_peeling': dasch.dasch_transform,
@@ -111,8 +111,7 @@ class AbelTiming(object):
                         # calculate and store basex basis matrix
                         t = time.time()
                         basis[method[:-3]] = transform[method](ni, ni,
-                                                       basis_dir=None,
-                                                       direction="inverse")
+                                                       basis_dir=None)
                         res['bs'][method].append((time.time()-t)*1000)
                     else:
                         basis[method[:-3]] = None,
@@ -121,8 +120,7 @@ class AbelTiming(object):
                     # calculate and store basis matrix
                     t = time.time()
                     # store basis calculation. NB a tuple to accomodate basex
-                    basis[method[:-3]] = transform[method](ni,
-                                                   direction="inverse"), 
+                    basis[method[:-3]] = transform[method](ni), 
                     res['bs'][method].append((time.time()-t)*1000)
 
             # Abel transforms ---------------

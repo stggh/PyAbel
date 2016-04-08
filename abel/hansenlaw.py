@@ -32,8 +32,7 @@ from math import exp, log, pow, pi
 #             the same result, but speeds up processing considerably.
 #############################################################################
 
-
-def hansenlaw_transform(IM, dr=1, direction="inverse"):
+_hansenlaw_docstring = \
     r"""Forward/Inverse Abel transformation using the algorithm of
     `Hansen and Law J. Opt. Soc. Am. A 2, 510-520 (1985) 
     <http://dx.doi.org/10.1364/JOSAA.2.000510>`_ equation 2a: 
@@ -75,6 +74,11 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
     IM : 1D or 2D numpy array
         right-side half-image (or quadrant)
 
+    basis_dir: str
+        path to the directory for saving / loading
+        the "dasch_method" operator matrix.
+        If None, the operator matrix will not be saved to disk.
+
     dr : float
         sampling size (=1 for pixel images), used for Jacobian scaling
 
@@ -103,11 +107,26 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
         Use ``abel.tools.center.center_image(IM, method='com', odd_size=True)`` 
     """
 
+
+def hansenlaw_transform(IM, basis_dir='.', dr=1, direction="inverse"):
     IM = np.atleast_2d(IM)
+
+    rows, cols = IM.shape
+    D = abel.tools.basis.get_bs_cached("hansenlaw", cols,
+                                                direction=direction)
+
+    return hansenlaw_transform_with_basis(IM, D, dr, direction)
+
+hansenlaw_transform.__doc__ = _hansenlaw_docstring
+
+
+def hansenlaw_transform_with_basis(IM, D, dr=1, direction="inverse"):
+    Phi, Gamma = D
+
+    rows, cols = IM.shape
     N = np.shape(IM)         # shape of input quadrant (half)
     AIM = np.zeros(N)        # forward/inverse Abel transform image
 
-    rows, cols = N
     if direction == "inverse":   # inverse transform
         # g' - derivative of the intensity profile
         if rows > 1:
@@ -121,9 +140,6 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
     # ------ The Hansen and Law algorithm ------------
     # iterate along columns, starting outer edge (right side)
     # toward the image center
-
-    Phi, Gamma = abel.tools.basis.get_bs_cached("hansenlaw", rows, cols,
-                                                direction=direction)
 
     K = Phi.shape[1]
     nn = np.arange(cols-2, 0, -1, dtype=int)
@@ -145,7 +161,7 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
         return -AIM*np.pi*dr   # forward still needs '-' sign
 
 
-def _bs_hansenlaw(rows, cols, direction="inverse"):
+def _bs_hansenlaw(cols, direction="inverse"):
     """basis functions for hansenlaw.
 
     Parameters
@@ -200,5 +216,4 @@ def _bs_hansenlaw(rows, cols, direction="inverse"):
         Phi[:, k, k] = np.power(Nm, lam[k])   # diagonal matrix Eq. (16a)
 
     return (Phi, Gamma)
-
 

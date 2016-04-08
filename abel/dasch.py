@@ -93,7 +93,7 @@ def _dasch_transform(IM, basis_dir='.', dr=1, direction="inverse",
     if cols < 3 and method == "three_point":
         raise ValueError('"three_point" requires image width (cols) > 3')
     
-    D = abel.tools.basis.get_bs_cached(method, rows, cols, basis_dir=basis_dir,
+    D = abel.tools.basis.get_bs_cached(method, cols, basis_dir=basis_dir,
                                        direction=direction)
 
     inv_IM = dasch_transform(IM, D)
