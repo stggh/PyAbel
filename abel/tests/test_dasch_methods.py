@@ -23,7 +23,7 @@ def test_dasch_basis_sets_cache():
     n = 121
 
     for method in dasch_transforms.keys():
-        file_name = os.path.join(DATA_DIR, "{}_basis_{}_{}.npy".
+        file_name = os.path.join(DATA_DIR, "{}_basis_{}_{}.npz".
                                  format(method, n, n))
 
         if os.path.exists(file_name):
