@@ -17,15 +17,15 @@ def test_hansenlaw_basis_sets_cache():
     n = 121
 
     file_name = os.path.join(DATA_DIR, "{}_basis_{}_{}.npz".
-                             format(method, n, n))
+                             format("hansenlaw", n, n))
 
     if os.path.exists(file_name):
         os.remove(file_name)
     # 1st call generate and save
-    abel.tools.get_bs_cached(method="hansenlaw", cols=n, basis_dir=DATA_DIR, 
+    abel.tools.basis.get_bs_cached(method="hansenlaw", cols=n, basis_dir=DATA_DIR, 
                              verbose=False)
     # 2nd call load from file
-    abel.tools.get_bs_cached(method="hansenlaw", cols=n, basis_dir=DATA_DIR, 
+    abel.tools.basis.get_bs_cached(method="hansenlaw", cols=n, basis_dir=DATA_DIR, 
                              verbose=False)
 
     # clean-up
