@@ -123,13 +123,16 @@ def dasch_transform(IM, D):
     return np.tensordot(IM, D, axes=(1, 1))
 
 
-def _bs_two_point(cols):
+def _bs_two_point(cols, direction="inverse"):
     """basis function for two_point.
     
     Parameters
     ----------
     cols : int
         width of the image
+
+    direction : str
+        not used
     """
 
     # basis function Eq. (9)  for j >= i
@@ -159,13 +162,16 @@ def _bs_two_point(cols):
     return D
 
 
-def _bs_three_point(cols):
+def _bs_three_point(cols, direction="inverse"):
     """basis function for three_point.
     
     Parameters
     ----------
     cols : int
         width of the image
+
+    direction : str
+        not used
     """
 
     # basis function Eq. (7)  for j >= i
@@ -230,13 +236,16 @@ def _bs_three_point(cols):
     return D
 
 
-def _bs_onion_peeling(cols):
+def _bs_onion_peeling(cols, direction="inverse"):
     """basis function for onion_peeling.
     
     Parameters
     ----------
     cols : int
         width of the image
+
+    direction : str
+        not used
 
     Returns
     -------

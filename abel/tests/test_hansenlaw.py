@@ -51,6 +51,11 @@ def test_hansenlaw_forward_tansform_gaussian():
 
     recon = abel.hansenlaw.hansenlaw_transform(ref.func, ref.dr,
                                                direction='forward')
+    import matplotlib.pyplot as plt
+    plt.plot(ref.func, label='ref', lw=3)
+    plt.plot(recon, label='hl')
+    plt.legend()
+    plt.show()
 
     ratio = abel.benchmark.absolute_ratio_benchmark(ref, recon, kind='direct')
 
