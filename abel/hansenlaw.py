@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 from time import time
-from math import exp, log, pow, pi
+#from scipy.ndimage.interpolation import shift
 
 #############################################################################
 # hansenlaw - a recursive method forward/inverse Abel transform algorithm
@@ -115,10 +115,10 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     # Eq. (18) used for the inverse transform
     def igammalt(Nm, lam, n):
-        return (1-np.power(Nm, lam))/(pi*lam)
+        return (1-np.power(Nm, lam))/(np.pi*lam)
 
     def igammagt(Nm, lam, n):
-        return -np.log(Nm)/pi
+        return -np.log(Nm)/np.pi
 
     if direction == "inverse":   # inverse transform
         gammagt = igammagt   # special case lam = 0.0
