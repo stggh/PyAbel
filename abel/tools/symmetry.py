@@ -266,136 +266,51 @@ def put_image_quadrants(Q, original_image_shape, symmetry_axis=None):
     Top = np.concatenate((np.fliplr(Q1), Q0), axis=1)
     Bottom = np.flipud(np.concatenate((np.fliplr(Q2), Q3), axis=1))
 
-    IM = np.concatenate((Top, Bottom), axis=0)
-
-    return IM
+    return np.concatenate((Top, Bottom), axis=0)
 
 
-# def center_image(data, center, n, ndim=2):
-#     """
-#     This centers the image at the given center and makes it of size n by n
-#
-#     THIS FUNCTION IS DEPRECIATED.
-#     All centering functions should be moves to abel.tools.center
-#     """
-#
-#     Nh, Nw = data.shape
-#     n_2 = n//2
-#     if ndim == 1:
-#         cx = int(center)
-#         im = np.zeros((1, 2*n))
-#         im[0, n-cx:n-cx+Nw] = data
-#         im = im[:, n_2:n+n_2]
-#         # This is really not efficient
-#         # Processing 2D image with identical rows while we just want a
-#         # 1D slice
-#         im = np.repeat(im, n, axis=0)
-#
-#     elif ndim == 2:
-#         cx, cy = np.asarray(center, dtype='int')
-#
-#         # Make an array of zeros that is large enough for cropping or padding:
-#         sz = 2*np.round(n + np.max((Nw, Nh)))
-#         im = np.zeros((sz, sz))
-#
-#         # Set center of "zeros image" to be the data
-#         im[sz//2-cy:sz//2-cy+Nh, sz//2-cx:sz//2-cx+Nw] = data
-#
-#         # Crop padded image to size n
-#         # note the n%2 which return the appropriate image size for both
-#         # odd and even images
-#         im = im[sz//2-n_2:n_2+sz//2+n % 2, sz//2-n_2:n_2+sz//2+n % 2]
-#
-#     else:
-#         raise ValueError
-#
-#     return im
-#
-#
-# def center_image_asym(data, center_column, n_vert, n_horz, verbose=False):
-#     """
-#     This centers a (rectangular) image at the given center_column
-#     and makes it of size n_vert by n_horz
-#
-#     THIS FUNCTION IS DEPRECIATED.
-#     All centering functions should be moved to abel.tools.center
-#     """
-#
-#     if data.ndim > 2:
-#         raise ValueError("Array to be centered must be 1- or 2-dimensional")
-#
-#     c_im = np.copy(data)  # make a copy of the original data for manipulation
-#     data_vert, data_horz = c_im.shape
-#     pad_mode = str("constant")
-#
-#     if data_horz % 2 == 0:
-#         # Add column of zeros to the extreme right
-#         # to give data array odd columns
-#         c_im = np.pad(c_im, ((0, 0), (0, 1)), pad_mode, constant_values=0)
-#         data_vert, data_horz = c_im.shape  # update data dimensions
-#
-#     delta_h = int(center_column - data_horz//2)
-#     if delta_h != 0:
-#         if delta_h < 0:
-#             # Specified center is to the left of nominal center
-#             # Add compensating zeroes on the left edge
-#             c_im = np.pad(c_im, ((0, 0), (2*np.abs(delta_h), 0)), pad_mode,
-#                           constant_values=0)
-#             data_vert, data_horz = c_im.shape
-#         else:
-#             # Specified center is to the right of nominal center
-#             # Add compensating zeros on the right edge
-#             c_im = np.pad(c_im, ((0, 0), (0, 2*delta_h)), pad_mode,
-#                           constant_values=0)
-#             data_vert, data_horz = c_im.shape
-#
-#     if n_vert >= data_vert and n_horz >= data_horz:
-#         pad_up = (n_vert - data_vert)//2
-#         pad_down = n_vert - data_vert - pad_up
-#         pad_left = (n_horz - data_horz)//2
-#         pad_right = n_horz - data_horz - pad_left
-#
-#         c_im = np.pad(
-#             c_im, ((pad_up, pad_down), (pad_left, pad_right)),
-#             pad_mode, constant_values=0)
-#
-#     elif n_vert >= data_vert and n_horz < data_horz:
-#         pad_up = (n_vert - data_vert)//2
-#         pad_down = n_vert - data_vert - pad_up
-#         crop_left = (data_horz - n_horz)//2
-#         crop_right = data_horz - n_horz - crop_left
-#         if verbose:
-#             print("Warning: cropping %d pixels from the sides \
-#                    of the image" % crop_left)
-#         c_im = np.pad(
-#             c_im[:, crop_left:-crop_right], ((pad_up, pad_down), (0, 0)),
-#             pad_mode, constant_values=0)
-#
-#     elif n_vert < data_vert and n_horz >= data_horz:
-#         crop_up = (data_vert - n_vert)//2
-#         crop_down = data_vert - n_vert - crop_up
-#         pad_left = (n_horz - data_horz)//2
-#         pad_right = n_horz - data_horz - pad_left
-#         if verbose:
-#             print("Warning: cropping %d pixels from top and bottom \
-#                    of the image" % crop_up)
-#         c_im = np.pad(
-#             c_im[crop_up:-crop_down], ((0, 0), (pad_left, pad_right)),
-#             pad_mode, constant_values=0)
-#
-#     elif n_vert < data_vert and n_horz < data_horz:
-#         crop_up = (data_vert - n_vert)//2
-#         crop_down = data_vert - n_vert - crop_up
-#         crop_left = (data_horz - n_horz)//2
-#         crop_right = data_horz - n_horz - crop_left
-#         if verbose:
-#             print("Warning: cropping %d pixels from top and bottom \
-#                    and %d pixels from the sides of the image " % (
-#                     crop_up, crop_left))
-#         c_im = c_im[crop_up:-crop_down, crop_left:-crop_right]
-#
-#     else:
-#         raise ValueError('Input data dimensions incompatible \
-#                           with chosen basis set.')
-#
-#     return c_im
+def get_image_halves(IM, symmetric=False, use_half=(True, True))
+
+    """split image into left- and right-halves.
+       odd columns increase width by +1
+
+    Parameters
+    ----------
+    IM : numpy.array
+        2d image 
+    symmetric : boolean
+        average each side
+    use_half : tuple of bool
+        (left, right), use half-image in the average
+    
+    """
+    L = 0;  R = 1  # left-, right-side
+
+    IM = np.atleast_2d(IM)
+    n, m = IM.shape
+
+    # mid-image, odd columnn width increased by 1
+    m_c = m // 2 + m % 2
+
+    HL = IM[:, :m_c]*use_half[L]
+    HR = IM[:, -m_c:]*use_half[R]
+
+    HL = np.fliplr(HL)
+
+    if symmetric:
+        HL = HR = (HL + HR)/(use_half[L] + use_half[R]) 
+
+    return HL, HR
+
+
+def put_image_halves(H, cols, symmetric=False):
+    L = 0
+    R = 1
+    if symmetric:
+        HL = HR
+    if cols % 2:
+        # odd-columns => remove duplicate first column from HL, HR
+        HR = HR[:, 1:]
+        HL = HL[:, 1:]
+
+    return np.concatentate(np.fliplr(HL), HR)

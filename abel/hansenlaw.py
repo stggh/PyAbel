@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 from time import time
-#from scipy.ndimage.interpolation import shift
+from scipy.ndimage.interpolation import shift
 
 #############################################################################
 # hansenlaw - a recursive method forward/inverse Abel transform algorithm
@@ -169,6 +169,8 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     # center pixel column
     AIM[:, 0] = AIM[:, 1]
+
+    AIM = shift(AIM, (0, 1/2))
 
     if AIM.shape[0] == 1:
         AIM = AIM[0]   # flatten to a vector
