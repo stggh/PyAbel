@@ -198,7 +198,7 @@ class StepAnalytical(BaseAnalytical):
 
         self.func = fr
 
-        self.abel = sym_abel_step_1d(self.r, self.A0, self.r1, self.r2)[0]
+        self.abel = sym_abel_step_1d(self.r, self.A0, self.r1, self.r2, mask)[0]
 
         # exclude the region near the discontinuity
         self.mask_valid = np.abs(
@@ -249,7 +249,7 @@ class GaussianAnalytical(BaseAnalytical):
                           (np.abs(self.r) > 0)
 
 
-def abel_step_analytical(r, A0, r0, r1):
+def abel_step_analytical(r, A0, r0, r1, mask):
     """
     Directed Abel transform of a step function located between r0 and r1,
     with a height A0
@@ -284,7 +284,7 @@ def abel_step_analytical(r, A0, r0, r1):
         raise ValueError('The vector of r coordinates must start with 0.0')
 
     F_1d = np.zeros(r.shape)
-    mask = (r >= r0)*(r < r1)
+    #mask = (r >= r0)*(r <= r1)
     F_1d[mask] = 2*np.sqrt(r1**2 - r[mask]**2)
     mask = r < r0
     F_1d[mask] = 2*np.sqrt(r1**2 - r[mask]**2) - 2*np.sqrt(r0**2 - r[mask]**2)

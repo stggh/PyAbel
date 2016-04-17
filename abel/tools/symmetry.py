@@ -269,8 +269,7 @@ def put_image_quadrants(Q, original_image_shape, symmetry_axis=None):
     return np.concatenate((Top, Bottom), axis=0)
 
 
-def get_image_halves(IM, symmetric=False, use_half=(True, True))
-
+def _get_image_halves(IM, symmetric=False, use_half=(True, True)):
     """split image into left- and right-halves.
        odd columns increase width by +1
 
@@ -303,7 +302,23 @@ def get_image_halves(IM, symmetric=False, use_half=(True, True))
     return HL, HR
 
 
-def put_image_halves(H, cols, symmetric=False):
+def _put_image_halves(H, cols, symmetric=False):
+    """ reassemble image from 2-halves.
+
+    Parameters
+    ----------
+    H : tuple 
+        (left-side, right-side) numpy.arrays
+    cols: int
+        returned image width. Odd size image loses inner column from left side
+    symmetric: bool
+        left side = right side 
+
+    Returns
+    ------
+    IM: numpy 2d array
+        reassembled image
+    """
     L = 0
     R = 1
     if symmetric:

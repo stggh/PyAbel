@@ -5,8 +5,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-from time import time
-from scipy.ndimage.interpolation import shift
+from numba import jit
 
 #############################################################################
 # hansenlaw - a recursive method forward/inverse Abel transform algorithm
@@ -31,7 +30,23 @@ from scipy.ndimage.interpolation import shift
 #             the same result, but speeds up processing considerably.
 #############################################################################
 
+@jit
+# Two alternative Gamma functions for forward/inverse transform
+# Eq. (16c) used for the forward transform
+def fgamma(Nm, lam, n):
+    return 2*n*(1-np.power(Nm, lam+1))/(lam+1)
 
+@jit
+# Eq. (18) used for the inverse transform
+def igammalt(Nm, lam, n):
+    return (1-np.power(Nm, lam))/(np.pi*lam)
+
+@jit
+def igammagt(Nm, lam, n):
+    return -np.log(Nm)/np.pi
+
+
+@jit
 def hansenlaw_transform(IM, dr=1, direction="inverse"):
     r"""Forward/Inverse Abel transformation using the algorithm of
     `Hansen and Law J. Opt. Soc. Am. A 2, 510-520 (1985) 
@@ -108,21 +123,10 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     rows, cols = N
 
-    # Two alternative Gamma functions for forward/inverse transform
-    # Eq. (16c) used for the forward transform
-    def fgamma(Nm, lam, n):
-        return 2*n*(1-np.power(Nm, lam+1))/(lam+1)
-
-    # Eq. (18) used for the inverse transform
-    def igammalt(Nm, lam, n):
-        return (1-np.power(Nm, lam))/(np.pi*lam)
-
-    def igammagt(Nm, lam, n):
-        return -np.log(Nm)/np.pi
-
     if direction == "inverse":   # inverse transform
         gammagt = igammagt   # special case lam = 0.0
         gammalt = igammalt   # lam < 0.0
+        nn = np.arange(cols-2, 0, -1, dtype=int)
 
         # g' - derivative of the intensity profile
         if rows > 1:
@@ -134,6 +138,7 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
     else:  # forward transform
         gammagt = gammalt = fgamma
         gp = IM
+        nn = np.arange(cols-1, 0, -1, dtype=int)
 
     # ------ The Hansen and Law algorithm ------------
     # iterate along columns, starting outer edge (right side)
@@ -145,14 +150,11 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
                     -47391.1])
 
     K = np.size(h)
-    nn = np.arange(cols-2, 0, -1, dtype=int)
+    X = np.zeros((K, rows))
+    Gamma = np.zeros((len(nn), K, 1))
+    Phi = np.zeros((len(nn), K, K))
 
     Nm = (nn+1)/nn          # R0/R
-
-    X = np.zeros((K, rows))
-    Gamma = np.zeros((cols-2, K, 1))
-    Phi = np.zeros((cols-2, K, K))
-
     # Gamma_n and Phi_n  Eq. (16a) and (16b)
     # lam = 0.0
     Gamma[:, 0, 0] = h[0]*gammagt(Nm, lam[0], nn)   
@@ -169,8 +171,6 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     # center pixel column
     AIM[:, 0] = AIM[:, 1]
-
-    AIM = shift(AIM, (0, 1/2))
 
     if AIM.shape[0] == 1:
         AIM = AIM[0]   # flatten to a vector
