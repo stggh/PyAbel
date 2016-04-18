@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-from numba import jit
 
 #############################################################################
 # hansenlaw - a recursive method forward/inverse Abel transform algorithm
@@ -30,23 +29,6 @@ from numba import jit
 #             the same result, but speeds up processing considerably.
 #############################################################################
 
-@jit
-# Two alternative Gamma functions for forward/inverse transform
-# Eq. (16c) used for the forward transform
-def fgamma(Nm, lam, n):
-    return 2*n*(1-np.power(Nm, lam+1))/(lam+1)
-
-@jit
-# Eq. (18) used for the inverse transform
-def igammalt(Nm, lam, n):
-    return (1-np.power(Nm, lam))/(np.pi*lam)
-
-@jit
-def igammagt(Nm, lam, n):
-    return -np.log(Nm)/np.pi
-
-
-@jit
 def hansenlaw_transform(IM, dr=1, direction="inverse"):
     r"""Forward/Inverse Abel transformation using the algorithm of
     `Hansen and Law J. Opt. Soc. Am. A 2, 510-520 (1985) 
@@ -123,6 +105,18 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     rows, cols = N
 
+    # Two alternative Gamma functions for forward/inverse transform
+    # Eq. (16c) used for the forward transform
+    def fgamma(Nm, lam, n):
+        return 2*n*(1-np.power(Nm, lam+1))/(lam+1)
+
+    # Eq. (18) used for the inverse transform
+    def igammalt(Nm, lam, n):
+        return (1-np.power(Nm, lam))/(np.pi*lam)
+
+    def igammagt(Nm, lam, n):
+        return -np.log(Nm)/np.pi
+
     if direction == "inverse":   # inverse transform
         gammagt = igammagt   # special case lam = 0.0
         gammalt = igammalt   # lam < 0.0
@@ -137,8 +131,8 @@ def hansenlaw_transform(IM, dr=1, direction="inverse"):
 
     else:  # forward transform
         gammagt = gammalt = fgamma
-        gp = IM
         nn = np.arange(cols-1, 0, -1, dtype=int)
+        gp = IM
 
     # ------ The Hansen and Law algorithm ------------
     # iterate along columns, starting outer edge (right side)
