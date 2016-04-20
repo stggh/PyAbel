@@ -29,8 +29,9 @@ class AbelTiming(object):
         select: list of str
             list of transforms to benchmark select=['all',] (default) or 
             choose transforms:
-            select=['basex', 'direct_Python', 'direct_C', 'hansenlaw',
-             'onion_bordas, 'onion_peeling', 'two_point', 'three_point']
+            select=['basex', 'direct_Python', 'direct_C', 'hansenlaw', 
+                    'linbasex' 'onion_bordas, 'onion_peeling', 'two_point', 
+                    'three_point']
 
         n_max_bs: integer
             since the basis sets generation takes a long time,
