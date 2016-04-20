@@ -52,6 +52,7 @@ class AbelTiming(object):
             'direct_Python': direct.direct_transform,
             'direct_C': direct.direct_transform,
             'hansenlaw': hansenlaw.hansenlaw_transform,
+            'linbasex': linbasex.linbasex_transform,
             'onion_bordas': onion_bordas.onion_bordas_transform,
             'onion_peeling': dasch.dasch_transform,
             'onion_peeling_bs': dasch._bs_onion_peeling,
@@ -67,6 +68,7 @@ class AbelTiming(object):
                      'two_point_bs': [], 'three_point_bs': []}
         res['forward'] = {'direct_Python': [], 'hansenlaw': []}
         res['inverse'] = {'basex': [], 'direct_Python': [], 'hansenlaw': [],
+                          'linbasex': [],
                           'onion_bordas': [], 'onion_peeling': [],
                           'two_point': [], 'three_point': []}
 

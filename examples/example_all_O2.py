@@ -24,6 +24,7 @@ from time import time
 
 transforms = {
   "basex": abel.basex.basex_transform,   
+  "linbasex": abel.linbasex.linbasex_transform,
   "direct": abel.direct.direct_transform,      
   "hansenlaw": abel.hansenlaw.hansenlaw_transform,
   "onion_bordas": abel.onion_bordas.onion_bordas_transform,

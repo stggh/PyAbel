@@ -18,6 +18,14 @@ abel.basex module
     :undoc-members:
     :show-inheritance:
 
+abel.linbasex module
+--------------------
+
+.. automodule:: abel.linbasex
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 abel.hansenlaw module
 ---------------------
 

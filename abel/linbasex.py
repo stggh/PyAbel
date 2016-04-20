@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import abel
 import scipy as sci
 from scipy.special import eval_legendre
 from scipy import ndimage
@@ -23,12 +24,11 @@ from scipy import ndimage
 #     84, no. 3 (March 1, 2013): 033101–033101 – 10. 
 #     doi:10.1063/1.4793404.
 # 
-# 2016-04-20 Stephen Gibson extract core code from supplied ipython notebook
+# 2016-04-20 Stephen Gibson core code extracted from supplied ipython notebook
 #
 ################################################################################
 
-def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
-                       verbose=False): 
+_linbasex_parameter_docstring = \
     """Inverse Abel transform using 1d projections of VM-images.
 
     Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi, 
@@ -40,29 +40,73 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
       84, no. 3 (March 1, 2013): 033101–033101 – 10. 
       doi:10.1063/1.4793404.
 
+
     Parameters
     ----------
     Dat: numpy 2D array
-        image data
-    n: int
+        image data must be square shape of odd size
     an: list
         angles in degrees
         e.g. [0, 90] or [0, 54.7356, 90] or [0, 45, 90, 135]
-    un: list
+    un: list 
         order of Legendre polynomials to be used as the expansion
         even polynomials [0, 2, ...] gerade
         odd polynomials [1, 3, ...] ungerade
-        all orders [0, 1, 2, ...] 
+        all orders [0, 1, 2, ...]. 
     inc: int
-        number of pixels per Newton sphere
+        number of pixels per Newton sphere (default 1)
+    direction: str
+        The type of Abel transform to be performed
+        only accepts value ``'inverse'``
+    verbose: bool
+        print information about the inversion process
+
 
     Returns
     -------
-    inv_Data: numpy 2D array
+    inv_Data: numpy 2D array 
        inverse Abel transformed image
     """
 
+
+def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, dr=1,
+                             direction="inverse", verbose=False):
+    """wrapper function for linebasex to process supplied quadrant-image 
+       as a full-image.
+
+    PyAbel transform functions operate on the right side of an image.
+    Here we follow the basex technique of duplicating the right side to
+    the left reforming a whole image.
+
+    """
     Dat = np.atleast_2d(Dat)
+
+    # current code linbasex only likes odd-size square images
+    # not very efficient, better to simply process the whole image
+    quad_rows, quad_cols = Dat.shape
+    full_image = abel.tools.symmetry.put_image_quadrants((Dat, Dat, Dat, Dat),
+                      original_image_shape=(quad_rows*2-1, quad_cols*2-1)) 
+    
+    # inverse Abel transform
+    recon = linbasex_transform_full(full_image, an=an, un=un, inc=inc,
+                                    direction=direction, verbose=verbose)
+
+    # unpack right-side
+    inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
+    
+    if inv_Dat.shape[0] == 1:
+        # flatten to vector
+        inv_Dat = inv_Dat[0]
+
+    return inv_Dat
+
+linbasex_transform.__doc__ += _linbasex_parameter_docstring
+
+def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1,
+                             direction="inverse", verbose=False): 
+
+    Dat = np.atleast_2d(Dat)
+
     rows, cols = Dat.shape
     r2 = rows//2 + rows % 2
     c2 = cols//2 + cols % 2
@@ -84,7 +128,7 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
     if verbose:
         Summary=['The clipped and rounded VMI has size: {}'.format(Dat.shape),
                  'The chosen set of angles is: {}'.format(an),
-                 'The {} chosen Polynoms are : P{}'.format(pol,np.array(un)),
+                 'The {} chosen Polynomials are: P{}'.format(pol,np.array(un)),
                  'The resolution is: {} pixel'.format(inc)]
         for item in Summary:
             print(item)
@@ -237,15 +281,17 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
     def SL(i, x, y, Beta_convol, index):
         """Calculates interpolated β(r), where r= radius"""
         r = np.sqrt(x**2 + y**2 + 0.1)  # + 0.1 to avoid divison by zero.
+
         #normalize:divison by circumference.
         BB = np.interp(r, index, Beta_convol[i, :], left=0)/(2*np.pi*r)
+
         return BB*eval_legendre(un[i], x/r)
 
     def Slices(sig_s=0.5):
         """defines sigma for Gaussian smoothing function and 
            calculates Slices"""
 
-        NP = len(Beta[0,:])           #number of points in 3_d plot.
+        NP = len(Beta[0,:])  #number of points in 3_d plot.
         index=range(NP)
 
         Beta_convol=np.zeros((pol,NP))
@@ -273,3 +319,5 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
     inv_Dat = Slices()
    
     return inv_Dat
+
+linbasex_transform_full.__doc__ = _linbasex_parameter_docstring

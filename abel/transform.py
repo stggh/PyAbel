@@ -10,10 +10,11 @@ import time
 import warnings
 
 from . import basex
-from . import hansenlaw
 from . import dasch
-from . import onion_bordas
 from . import direct
+from . import hansenlaw
+from . import linbasex
+from . import onion_bordas
 from . import tools
 
 
@@ -95,6 +96,10 @@ class Transform(object):
 
             ``onion_peeling``
                         the onion peeling deconvolution as described by Dasch (1992)
+
+            ``linbasex``
+                        the 1d-projections of VM-images in terms of 1d
+                        spherical functions by Gerber et al. (2013)
 
         center : tuple or str
             If a tuple (float, float) is provided, this specifies
@@ -253,6 +258,16 @@ class Transform(object):
             but thanks to this Cython implementation (by Roman Yurchuk),
             this 'direct' method is competitive with the other methods.
 
+        ``linbasex``
+            VM-images are composed of projected Newton spheres with a common 
+            centre. The 2D images are usually evaluated by a decomposition into
+            base vectors each representing the 2D projection of a set of 
+            particles starting from a centre with a specific velocity 
+            distribution. `linbasex` evaluate 1D projections of VM-images in 
+            terms of 1D projections of spherical functions, instead.
+            
+            ..Rev. Sci. Instrum. 84, 033101 (2013): <http://scitation.aip.org/content/aip/journal/rsi/84/3/10.1063/1.4793404>
+
         ``onion_bordas``
             The onion peeling method, also known as "back projection",
             originates from Bordas *et al.*  `Rev. Sci. Instrum. 67, 2257 (1996)`_.
@@ -351,6 +366,7 @@ class Transform(object):
             "basex": basex.basex_transform,
             "direct": direct.direct_transform,
             "hansenlaw": hansenlaw.hansenlaw_transform,
+            "linbasex": linbasex.linbasex_transform,
             "onion_bordas": onion_bordas.onion_bordas_transform,
             "onion_peeling": dasch.onion_peeling_transform,
             "two_point": dasch.two_point_transform,
