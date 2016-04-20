@@ -107,13 +107,11 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
                                                      reshape=False)
             QLz[i,:]=np.sum(Rot_Dat,axis=1) 
 
-    QLz.shape,np.swapaxes(QLz,0,1).shape
-
     #Calculation of Base vectors
     #Define triangular matrix containing columns x/y (representing cos(θ)).
-    n = cols
+    n = c2
     Index = np.indices((n, n))[:, :, :]
-    Index[:,0,0] = 1
+    Index[:, 0, 0] = 1
     cos = Index[0]*np.tri(n, n, k=0, )[::-1, ::-1]/np.diag(Index[0])
 
     #Concatenate to "bi"-triangular matrix 
@@ -202,7 +200,7 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
     # You can increase rcond until you note a “smearing out“ effect.
 
 
-    def beta_solve(Basis, bb, rcond=0.0005, clip_low=0, clip_high=0,
+    def beta_solve(Basis, bb, pol, rcond=0.0005, clip_low=0, clip_high=0,
                    verbose=False):
         # set rcond to zero to switch conditioning off
         #clip the β's for the "clip_low" smallest and "clip_high" biggest 
@@ -234,9 +232,9 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
     #arrange all projections for input into "lstsq"
     bb = np.concatenate(QLz, axis=0)
 
-    Beta = beta_solve(Basis, bb)
+    Beta = beta_solve(Basis, bb, pol=len(un))
 
-    def SL(i, x, y, Beta_convol):
+    def SL(i, x, y, Beta_convol, index):
         """Calculates interpolated β(r), where r= radius"""
         r = np.sqrt(x**2 + y**2 + 0.1)  # + 0.1 to avoid divison by zero.
         #normalize:divison by circumference.
@@ -264,7 +262,7 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
     
         for i in range(pol): #Calculate ordered slices:
             Slice_3D[i] = np.fromfunction(
-                      lambda k, l: SL(i, (k-NP),(l-NP), Beta_convol), 
+                      lambda k, l: SL(i, (k-NP),(l-NP), Beta_convol, index), 
                                       (2*NP, 2*NP))
     
         Slice = np.sum(Slice_3D, axis=0) #Sum ordered slices up
@@ -272,6 +270,6 @@ def linbasex_transform(Dat, n=4, an=[0, 90], un=[0, 2], inc=1,
         return Slice
         
 
-    inv_Dat = Slices(sig_s)
+    inv_Dat = Slices()
    
     return inv_Dat
