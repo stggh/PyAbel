@@ -9,6 +9,7 @@ import abel
 from . import basex
 from . import dasch
 from . import direct
+from . import linbasex
 from . import hansenlaw
 from . import onion_bordas
 from . import tools
