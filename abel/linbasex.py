@@ -11,10 +11,10 @@ from scipy.special import eval_legendre
 from scipy import ndimage
 
 ################################################################################
-# linbasex - inversion procedure bases on 1-dimensional projections of 
+# linbasex - inversion procedure based on 1-dimensional projections of 
 #            VM-images 
 # 
-# as described in:
+#  as described in:
 # Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi, 
 # Peter Radi, and Yaroslav Sych.
 # 
@@ -24,7 +24,8 @@ from scipy import ndimage
 #     84, no. 3 (March 1, 2013): 033101–033101 – 10. 
 #     doi:10.1063/1.4793404.
 # 
-# 2016-04-20 Stephen Gibson core code extracted from supplied ipython notebook
+# 2016-04-20 Stephen Gibson core code extracted from the supplied ipython 
+#            notebook (see #167: https://github.com/PyAbel/PyAbel/issues/167)
 #
 ################################################################################
 
@@ -34,8 +35,8 @@ _linbasex_parameter_docstring = \
     Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi, 
     Peter Radi, and Yaroslav Sych.
   
-    “Charged Particle Velocity Map Image Reconstruction with One-Dimensional
-     Projections of Spherical Functions.” 
+    `Charged Particle Velocity Map Image Reconstruction with One-Dimensional
+     Projections of Spherical Functions.`
      Review of Scientific Instruments 
       84, no. 3 (March 1, 2013): 033101–033101 – 10. 
       doi:10.1063/1.4793404.
@@ -111,54 +112,39 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1,
     r2 = rows//2 + rows % 2
     c2 = cols//2 + cols % 2
 
-    #Determine minimum and maximum counts in the image
-    min_Dat=np.min(Dat) 
-    max_Dat=np.max(Dat)
-
     centre = np.array([r2, c2])
     span = c2 - 1
     dim = cols
-    if verbose:
-         print(centre, span, dim, Dat.shape)
-
 
     #Number of used polynoms
     pol = len(un)       
 
-    if verbose:
-        Summary=['The clipped and rounded VMI has size: {}'.format(Dat.shape),
-                 'The chosen set of angles is: {}'.format(an),
-                 'The {} chosen Polynomials are: P{}'.format(pol,np.array(un)),
-                 'The resolution is: {} pixel'.format(inc)]
-        for item in Summary:
-            print(item)
-
     # Calculate Projections at chosen angles.
-    proj=len(an)                  #How many projections
+    proj=len(an)  #How many projections
  
-    QLz =np.zeros((proj, dim))     #Define array for projections.
+    QLz =np.zeros((proj, dim))  #Define array for projections.
 
     # Rotate and project VMI-image for each angle (as many as projections)
     an=np.array(an)
     if an.all == [0, 90]:
-    #If coordinates of the detector coincide with the projection directions 
+    # If coordinates of the detector coincide with the projection directions 
     # unnecessary rotationsare avoided, i.e.an=[0, 90] degrees
-        QLz[0]=np.sum(Dat,axis=1)
-        QLz[1]=np.sum(Dat,axis=0)
+        QLz[0] = np.sum(Dat, axis=1)
+        QLz[1] = np.sum(Dat, axis=0)
     else:
         for i in range(proj):
             Rot_Dat=sci.ndimage.interpolation.rotate(Dat, an[i], axes=(1, 0),
                                                      reshape=False)
             QLz[i,:]=np.sum(Rot_Dat,axis=1) 
 
-    #Calculation of Base vectors
-    #Define triangular matrix containing columns x/y (representing cos(θ)).
+    # Calculation of Base vectors
+    # Define triangular matrix containing columns x/y (representing cos(θ)).
     n = c2
-    Index = np.indices((n, n))[:, :, :]
+    Index = np.indices((n, n))
     Index[:, 0, 0] = 1
-    cos = Index[0]*np.tri(n, n, k=0, )[::-1, ::-1]/np.diag(Index[0])
+    cos = Index[0]*np.tri(n, n, k=0)[::-1, ::-1]/np.diag(Index[0])
 
-    #Concatenate to "bi"-triangular matrix 
+    # Concatenate to "bi"-triangular matrix 
     COS = np.concatenate((-cos[::-1, :],cos[1:, :]), axis=0)
     TRI = np.concatenate((np.tri(n, n, k=0,)[:-1, ::-1],
                           np.tri(n, n, k=0,)[::-1, ::-1]), axis=0)
