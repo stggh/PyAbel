@@ -103,14 +103,13 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
     else:
         return inv_Dat
 
+
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                             basis_dir='.', dr=1):
 
     Dat = np.atleast_2d(Dat)
 
     rows, cols = Dat.shape
-    r2 = rows//2 + rows % 2
-    c2 = cols//2 + cols % 2
 
     # Basis = _bs_linbasex(cols, un=un, an=an, inc=inc)
     Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
@@ -119,8 +118,8 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 
     return _linbasex_transform_with_basis(Dat, Basis, an=an, un=un, inc=inc,
                                           sig_s=sig_s)
-
     
+
 def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
                                     sig_s=0.5):
     """linbasex inverse Abel transform using basis set Beta.
@@ -130,8 +129,6 @@ def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
     Dat = np.atleast_2d(Dat)
 
     rows, cols = Dat.shape
-    r2 = rows//2 + rows % 2
-    c2 = cols//2 + cols % 2
 
     # Number of used polynoms
     pol = len(un)       

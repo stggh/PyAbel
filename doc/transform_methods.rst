@@ -19,7 +19,7 @@ The numerical Abel transform is computationally intensive, and a basic numerical
 
     7. The :doc:`onion_bordas <transform_methods/onion_bordas>` onion-peeling method of Bordas et al. is based on the MatLab code of Rallis and Wells *et al.* The article claims "the method works properly only in the limit of large electrostatic energy to initial kinetic energy ratio and gives qualitatively the same results as a standard inversion method". 
 
-    8. The :doc:`linbasex <transform_methods/linbasex>` 1D-spherical basis method of Gerber et al. evaluate 1D projections of VM-images in terms of 1D projections of spherical functions. The results produce directly the coefficients of the involved spherical functions, making the reconstruction of sliced Newton spheres obsolete.
+    8. ``*`` The :doc:`linbasex <transform_methods/linbasex>` 1D-spherical basis method of Gerber et al. evaluate 1D projections of VM-images in terms of 1D projections of spherical functions. The results produce directly the coefficients of the involved spherical functions, making the reconstruction of sliced Newton spheres obsolete.
 
     9. (Planned implementation) The :doc:`Fourier–Hankel <transform_methods/fh>` method, which is computationally efficient, but contains significant centerline noise and is known to introduce artifacts. 
 
