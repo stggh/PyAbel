@@ -72,7 +72,8 @@ _linbasex_parameter_docstring = \
     """
 
 
-def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, dr=1,
+def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5, 
+                       basis_dir='.', dr=1,
                        return_Beta=False, direction="inverse", verbose=False):
     """wrapper function for linebasex to process supplied quadrant-image 
        as a full-image.
@@ -91,7 +92,8 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, dr=1,
                       original_image_shape=(quad_rows*2-1, quad_cols*2-1)) 
     
     # inverse Abel transform
-    recon, Beta = linbasex_transform_full(full_image, an=an, un=un, inc=inc)
+    recon, Beta = linbasex_transform_full(full_image, an=an, un=un, inc=inc,
+                                          basis_dir=basis_dir)
 
     # unpack right-side
     inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
@@ -101,9 +103,8 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, dr=1,
     else:
         return inv_Dat
 
-
-    
-def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5):
+def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
+                            basis_dir='.', dr=1):
 
     Dat = np.atleast_2d(Dat)
 
@@ -111,23 +112,40 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5):
     r2 = rows//2 + rows % 2
     c2 = cols//2 + cols % 2
 
-    centre = np.array([r2, c2])
-    span = c2 - 1
-    dim = cols
+    # Basis = _bs_linbasex(cols, un=un, an=an, inc=inc)
+    Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
+                  basis_dir=basis_dir,
+                  basis_options=dict(an=an, un=un, inc=inc))
 
-    #Number of used polynoms
+    return _linbasex_transform_with_basis(Dat, Basis, an=an, un=un, inc=inc,
+                                          sig_s=sig_s)
+
+    
+def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
+                                    sig_s=0.5):
+    """linbasex inverse Abel transform using basis set Beta.
+
+    """ 
+
+    Dat = np.atleast_2d(Dat)
+
+    rows, cols = Dat.shape
+    r2 = rows//2 + rows % 2
+    c2 = cols//2 + cols % 2
+
+    # Number of used polynoms
     pol = len(un)       
 
-    # Calculate Projections at chosen angles.
-    proj=len(an)  #How many projections
+    # How many projections
+    proj=len(an)
  
-    QLz =np.zeros((proj, dim))  #Define array for projections.
+    QLz =np.zeros((proj, cols))  #Define array for projections.
 
     # Rotate and project VMI-image for each angle (as many as projections)
     an=np.array(an)
     if an.all == [0, 90]:
-    # If coordinates of the detector coincide with the projection directions 
-    # unnecessary rotationsare avoided, i.e.an=[0, 90] degrees
+        # If coordinates of the detector coincide with the projection
+        # directions unnecessary rotations are avoided, i.e.an=[0, 90] degrees
         QLz[0] = np.sum(Dat, axis=1)
         QLz[1] = np.sum(Dat, axis=0)
     else:
@@ -138,8 +156,6 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5):
 
     #arrange all projections for input into "lstsq"
     bb = np.concatenate(QLz, axis=0)
-
-    Basis = _bs_linbasex(cols, un=un, an=an, inc=inc)
 
     Beta = beta_solve(Basis, bb, pol)
 
@@ -152,17 +168,13 @@ linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
 
 def beta_solve(Basis, bb, pol, rcond=0.0005, clip_low=0, clip_high=0):
     # set rcond to zero to switch conditioning off
-    #clip the β's for the "clip_low" smallest and "clip_high" biggest 
-    #Newton spheres.
 
     #define array for solutions. len(Basis[0,:])//pol is an integer.
     Beta = np.zeros((pol, len(Basis[0, :])//pol))
 
-    rr = len(Beta[0,:])
-    if clip_high == 0: 
-        clip_high = rr
     #solve equation
     Sol = np.linalg.lstsq(Basis, bb, rcond)
+
     #arrange solutions into subarrays for each β.
     Beta = Sol[0].reshape((pol, len(Sol[0])//pol)) 
 
@@ -263,10 +275,10 @@ def _bas(ord, angle, COS, TRI):
     return basis_vec
 
 
-def _bs_linbasex(cols, un, an, inc):
+def _bs_linbasex(cols, an=[0, 90], un=[0, 2], inc=1):
 
-    proj = len(un)
     pol = len(an)
+    proj = len(un)
 
     # Calculation of Base vectors
     # Define triangular matrix containing columns x/y (representing cos(θ)).
