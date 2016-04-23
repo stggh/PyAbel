@@ -95,11 +95,12 @@ class Transform(object):
                         re-implemented by Rallis, Wells and co-workers (2014).
 
             ``onion_peeling``
-                        the onion peeling deconvolution as described by Dasch (1992)
+                        the onion peeling deconvolution as described by 
+                        Dasch (1992).
 
             ``linbasex``
                         the 1d-projections of VM-images in terms of 1d
-                        spherical functions by Gerber et al. (2013)
+                        spherical functions by Gerber et al. (2013).
 
         center : tuple or str
             If a tuple (float, float) is provided, this specifies
@@ -404,6 +405,23 @@ class Transform(object):
             AQ0 = selected_transform(Q0)
             AQ2 = selected_transform(Q2)
             AQ3 = selected_transform(Q3)
+
+        if self.method == "linbasex" and\
+           "return_Beta" in transform_options.keys():
+            # linbasex evaluates speed and anisotropy parameters
+            Beta0 = AQ0[1]
+            Beta1 = AQ1[1]
+            Beta2 = AQ2[1]
+            Beta3 = AQ3[1]
+            # rconstructed images of each quadrant
+            AQ0 = AQ0[0]
+            AQ1 = AQ1[0]
+            AQ2 = AQ2[0]
+            AQ3 = AQ3[0]
+            self.linbasex_angular_integration =\
+                 (Beta0[0] + Beta1[0] + Beta2[0] + Beta3[0])/4
+            self.linbasex_radial_integration =\
+                 (Beta0[1] + Beta1[1] + Beta2[1] + Beta3[1])/4
 
         # reassemble image
         self.transform = tools.symmetry.put_image_quadrants(

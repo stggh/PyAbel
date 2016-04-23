@@ -56,8 +56,15 @@ _linbasex_parameter_docstring = \
         all orders [0, 1, 2, ...]. 
     inc: int
         number of pixels per Newton sphere (default 1)
-    return_betas: bool
-        return the Beta array
+    sig_s: float 
+        sigma for smoothing (default 0.5)    
+    threshold: float
+        threshold for normalization of higher order Newton spheres (default 0.2) 
+    return_Beta: bool
+        return the Beta array of Newton spheres
+            for the case un=[0, 2]
+            Beta0[k] vs k -> speed distribution
+            Beta2[k] vs k -> anisotropy of each Newton sphere
     direction: str
         The type of Abel transform to be performed
         only accepts value ``'inverse'``
@@ -73,8 +80,9 @@ _linbasex_parameter_docstring = \
 
 
 def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5, 
-                       basis_dir='.', dr=1,
-                       return_Beta=False, direction="inverse", verbose=False):
+                       threshold=0.2,
+                       basis_dir='.', dr=1, return_Beta=False,
+                       direction="inverse", verbose=False):
     """wrapper function for linebasex to process supplied quadrant-image 
        as a full-image.
 
@@ -105,24 +113,27 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 
 
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
-                            basis_dir='.', dr=1):
+                            threshold=0.2, basis_dir='.', dr=1):
+    """interface function that fetches/calculates the Basis and
+       then evaluates the linbasex inverse Abel transform for the image.
+
+    """
 
     Dat = np.atleast_2d(Dat)
 
     rows, cols = Dat.shape
 
-    # Basis = _bs_linbasex(cols, un=un, an=an, inc=inc)
     Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
                   basis_dir=basis_dir,
                   basis_options=dict(an=an, un=un, inc=inc))
 
     return _linbasex_transform_with_basis(Dat, Basis, an=an, un=un, inc=inc,
-                                          sig_s=sig_s)
+                                          sig_s=sig_s, threshold=threshold)
     
 
 def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
-                                    sig_s=0.5):
-    """linbasex inverse Abel transform using basis set Beta.
+                                    sig_s=0.5, threshold=0.2):
+    """linbasex inverse Abel transform evaluated with supplied basis set Basis.
 
     """ 
 
@@ -158,12 +169,14 @@ def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
 
     inv_Dat = _Slices(Beta, un, sig_s=sig_s)
    
+    Beta = single_Beta_norm(Beta, threshold=threshold)
+   
     return inv_Dat, Beta
 
 linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
 
 
-def beta_solve(Basis, bb, pol, rcond=0.0005, clip_low=0, clip_high=0):
+def beta_solve(Basis, bb, pol, rcond=0.0005):
     # set rcond to zero to switch conditioning off
 
     #define array for solutions. len(Basis[0,:])//pol is an integer.
@@ -259,6 +272,42 @@ def int_beta(Beta, inc=1, regions=[(37, 40), (69, 72), (89, 92),
             Beta_int[i, j]=sum(Beta_n[i, range(*reg)])/(reg[1]-reg[0])
 
     return Beta_int
+
+
+def single_Beta_norm(Beta, threshold=0.2, clip=(0, -1)):
+    """Normalize Newton spheres.
+
+    Parameters
+    ----------
+    Beta: numpy array
+        Newton spheres
+    threshold: float
+        choose only Beta's for which Beta0 is greater than the maximal Beta0 
+        times threshold in the chosen range 
+        Set all βi, i>=1 to zero if the associated β0 is smaller than threshold
+
+    clip: tuple (int, int)
+        (clip_low, clip_high)
+        normalize to Newton sphere with maximum counts in chosen range.
+        Beta[0,clip_low:clip_high]
+
+    Return
+    ------
+    Beta: Newton spheres
+
+    """
+    pol = Beta.shape[0]
+    
+    Beta_norm = np.zeros_like(Beta)
+    # Normalized to Newton sphere with maximum counts in chosen range.
+    max_counts = max(Beta[0, clip[0]:clip[1]])
+    
+    Beta_norm[0] = Beta[0]/max_counts
+    for i in range(1, pol):
+        Beta_norm[i] = np.where(Beta[0]/max_counts>threshold,\
+                                Beta[i]/Beta[0], 0)
+
+    return Beta_norm
 
 
 def _bas(ord, angle, COS, TRI):
