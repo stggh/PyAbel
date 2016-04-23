@@ -113,7 +113,8 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 
 
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
-                            threshold=0.2, basis_dir='.', dr=1):
+                            threshold=0.2, basis_dir='.', dr=1,
+                            return_Beta=False):
     """interface function that fetches/calculates the Basis and
        then evaluates the linbasex inverse Abel transform for the image.
 

@@ -29,18 +29,28 @@ class Transform(object):
   
     Attributes
     ----------
-    transform : numpy 2D array 
+    transform: numpy 2D array 
         the 2D forward/reverse Abel transform.
     angular_integration : tuple
         radial coordinates, with the radial intensity (speed) distribution.
-    residual : numpy 2D array
+    residual: numpy 2D array
         residual image (not currently implemented).
     IM: numpy 2D array
         the input image, re-centered (optional) with an odd-size width
-    method : str
+    method: str
         transform method, as specified by the input option.
     direction: str
         transform direction, as specified by the input option.
+
+    linbasex_angular_integration:
+        with transform_options=dict(return_Beta=True), this attribute contains
+        the radial intensity (speed) distribution, evaluated directly from 
+        the Newton spheres
+    linbasex_anisotropy_parameter:
+        with transform_options=dict(return_Beta=True), this attribute contains
+        the anisotropy parameter varying with radius, evaluated directly from
+        the Newton spheres
+        
         
     """
 
@@ -259,7 +269,7 @@ class Transform(object):
             but thanks to this Cython implementation (by Roman Yurchuk),
             this 'direct' method is competitive with the other methods.
 
-        ``linbasex``
+        ``linbasex`` *
             VM-images are composed of projected Newton spheres with a common 
             centre. The 2D images are usually evaluated by a decomposition into
             base vectors each representing the 2D projection of a set of 
@@ -284,13 +294,13 @@ class Transform(object):
         .. _#56: <https://github.com/PyAbel/PyAbel/issues/56>
 
 
-        ``onion_peeling``
+        ``onion_peeling`` *
             This is one of the most compact and fast algorithms, with the
             inverse Abel transfrom achieved in one Python code-line, PR #155.
             See also ``three_point`` is the onion peeling algorithm as
             described by Dasch (1992), reference below.
 
-         ``two_point``
+         ``two_point`` *
             Another Dasch method. Simple, and fast, but not as accurate as the
             other methods.
 
@@ -362,6 +372,35 @@ class Transform(object):
                                                  **center_options)
 
     def _abel_transform_image(self, **transform_options):
+        if self.method == "linbasex" and\
+           "return_Beta" in transform_options.keys():
+            self._abel_transform_image_full(**transform_options)
+        else:
+            self._abel_transform_image_by_quadrant(**transform_options)
+
+
+    def _abel_transform_image_full(self, **transform_options):
+
+        abel_transform = {
+            # "basex": basex.basex_transform,
+            "linbasex": linbasex.linbasex_transform_full
+        }
+        t0 = time.time()
+
+        self._verboseprint('Calculating {0} Abel transform using {1} method -'
+                          .format(self.direction, self.method), 
+                          '\n    image size: {:d}x{:d}'.format(*self.IM.shape))
+
+        self.transform, Beta = abel_transform[self.method](self.IM,
+                                               **transform_options)
+
+        self._verboseprint("{:.2f} seconds".format(time.time()-t0))
+
+        self.linbasex_angular_integration = Beta[0]
+        self.linbasex_anisotropy_parameter = Beta[1]
+            
+
+    def _abel_transform_image_by_quadrant(self, **transform_options):
 
         abel_transform = {
             "basex": basex.basex_transform,
@@ -420,7 +459,7 @@ class Transform(object):
             AQ3 = AQ3[0]
             self.linbasex_angular_integration =\
                  (Beta0[0] + Beta1[0] + Beta2[0] + Beta3[0])/4
-            self.linbasex_radial_integration =\
+            self.linbasex_anisotropy_parameter =\
                  (Beta0[1] + Beta1[1] + Beta2[1] + Beta3[1])/4
 
         # reassemble image
