@@ -37,7 +37,7 @@ the CCD has (if optics are approriate) the same radius :math:`i`.
 Now let us assume that the distribution on the Newton sphere has some 
 anisotropy. We can describe the 
 distribution on this sphere by spherical functions :math:`Y_{nm}`. 
-Lets say :math:`xY_{00} + yY_{20}`. 
+Let's say :math:`xY_{00} + yY_{20}`. 
 The 1D projection of those spheres produces just :math:`xP_{i0}(k) +yP_{i2}(k)`
 where :math:`P_{i}` denotes Legendre Polynomials scaled to the interval 
 :math:`i` and :math:`k` is the argument (pixel).
@@ -54,6 +54,12 @@ the equations for the 1D
 projection at angle (:math:`a`) with this modified basis yields the same 
 :math:`x` and :math:`y` 
 parameters as before.
+
+Lin Basex aims at the determination of contributions in terms of spherical 
+functions calculating the weight of each :math:`Y_{l0}`. If we reconstruct 
+the 3D object by adding all the :math:`Y_{l0}` contributions we get the 
+inverse Laplace transform of the image on the CCD from which we can derive 
+"Slices". 
 
 
 When to use it

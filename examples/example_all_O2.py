@@ -129,7 +129,7 @@ ax0.imshow(im, vmin=0, vmax=0.8)
 
 ax1.set_title("speed distribution")
 ax1.axis(ymin=-0.05, ymax=1.1, xmin=50, xmax=450)
-ax1.legend(loc=0, labelspacing=0.1, fontsize=10)
+ax1.legend(loc=0, labelspacing=0.1, fontsize=10, frameon=False)
 plt.tight_layout()
 
 # save a copy of the plot
