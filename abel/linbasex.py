@@ -124,6 +124,10 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 
     rows, cols = Dat.shape
 
+    if rows != cols:
+        raise ValueError('image has shape ({}, {}), '.format(rows, cols)+\
+                         'must be square for a "linbasex" transform')
+
     Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
                   basis_dir=basis_dir,
                   basis_options=dict(an=an, un=un, inc=inc))

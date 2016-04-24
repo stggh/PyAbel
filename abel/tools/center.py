@@ -12,16 +12,17 @@ from scipy.ndimage.interpolation import shift
 from scipy.optimize import minimize
 from six import string_types # testing stings with Python 2 and 3 compatibility
 
-def find_center(IM, center='image_center', verbose=False, **kwargs):
+def find_center(IM, center='image_center', square=False, verbose=False, 
+                **kwargs):
     """Find the coordinates of image center, using the method 
        specified by the `center` parameter.
 
     Parameters
     ----------
-    IM : 2D np.array
+    IM: 2D np.array
       image data
 
-    center : str
+    center: str
         this determines how the center should be found. The options are:
         
         ``image_center``
@@ -37,6 +38,9 @@ def find_center(IM, center='image_center', verbose=False, **kwargs):
         ``slice``
             the image is broken into slices, and these slices compared for symmetry.
 
+    square: bool
+        if 'True' returned image will have a square shape
+
     Returns
     -------
     out: (float, float)
@@ -46,7 +50,8 @@ def find_center(IM, center='image_center', verbose=False, **kwargs):
     return func_method[center](IM, verbose=verbose, **kwargs)
 
 
-def center_image(IM, center='com', odd_size=True, verbose=False, **kwargs):
+def center_image(IM, center='com', odd_size=True, square=False, verbose=False,
+                 **kwargs):
     """ Center image with the custom value or by several methods provided in `find_center` function
 
     Parameters
@@ -78,6 +83,9 @@ def center_image(IM, center='com', odd_size=True, verbose=False, **kwargs):
         if True, an image will be returned containing an odd number of columns. 
         Most of the transform methods require this, so it's best to set this to 
         True if the image will subsequently be Abel transformed.
+
+    square: bool
+        if 'True' returned image will have a square shape
     
     crop : str
         This determines how the image should be cropped. The options are:
@@ -107,6 +115,11 @@ def center_image(IM, center='com', odd_size=True, verbose=False, **kwargs):
     if odd_size and cols % 2 == 0:
         # drop rightside column
         IM = IM[:, :-1]
+        rows, cols = IM.shape
+
+    if square and rows != cols:
+        # drop bottom row
+        IM = IM[:-1]
         rows, cols = IM.shape
 
     # center is in y,x (row column) format!
@@ -417,4 +430,3 @@ func_method = {
     "gaussian": find_center_by_gaussian_fit,
     "slice": find_image_center_by_slice
 }
-
