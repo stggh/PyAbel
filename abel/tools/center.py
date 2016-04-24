@@ -27,7 +27,9 @@ def find_center(IM, center='image_center', verbose=False, **kwargs):
         ``image_center``
             the center of the image is used as the center. The trivial result.
         ``com``
-            the center is found as the center of mass
+            the center is found as the center of mass.
+        ``convolution``
+            center by convolution of two projections along each axis.
         ``gaussian``
             the center is extracted by a fit to a Gaussian function.
             This is probably only appropriate if the data resembles a
@@ -62,7 +64,9 @@ def center_image(IM, center='com', odd_size=True, verbose=False, **kwargs):
         ``image_center``
             the center of the image is used as the center. The trivial result.
         ``com``
-            the center is found as the center of mass
+            the center is found as the center of mass.
+        ``convolution``
+            center by convolution of two projections along each axis.
         ``gaussian``
             the center is extracted by a fit to a Gaussian function.
             This is probably only appropriate if the data resembles a
@@ -223,14 +227,43 @@ def find_center_by_center_of_mass(IM, verbose=False, round_output=False,
     return center
 
 
+def find_center_by_convolution(IM, **kwargs):
+    """ Center the image by convolution of two projections along each axis.
+
+        code from the ``linbasex`` juptyer notebook
+
+    Parameter
+    -------
+    IM: numpy 2D array
+        image data
+    Returns
+    -------
+    center: tuple
+        (row-center, col-center)
+
+    """
+    # projections along axis=0 of image (rows)
+    QL_raw0 = np.sum(IM, axis=0)
+    # projections along axis=1 of image (cols)
+    QL_raw1 = np.sum(IM, axis=1) 
+
+    # autocorrelate projections
+    conv_0 = np.convolve(QL_raw0, QL_raw0, mode='full')
+    conv_1 = np.convolve(QL_raw1, QL_raw1, mode='full')
+    len_conv = len(conv_0)/2
+
+    #Take the first max, should there be several equal maxima.
+    center = (np.argmax(conv_0)/2, np.argmax(conv_1)/2)
+
+    return center
+
+
 def find_center_by_center_of_image(data, verbose=False, **kwargs):
     """
     Find image center simply from its dimensions.
     """
     return (data.shape[1] // 2 + data.shape[1] % 2,
             data.shape[0] // 2 + data.shape[0] % 2)
-
-
 
 
 def find_center_by_gaussian_fit(IM, verbose=False, round_output=False,
@@ -380,6 +413,7 @@ def find_image_center_by_slice(IM, slice_width=10, radial_range=(0, -1),
 func_method = {
     "image_center": find_center_by_center_of_image,
     "com": find_center_by_center_of_mass,
+    "convolution": find_center_by_convolution,
     "gaussian": find_center_by_gaussian_fit,
     "slice": find_image_center_by_slice
 }

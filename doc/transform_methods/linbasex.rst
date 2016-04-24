@@ -88,7 +88,7 @@ Example
 Historical
 ----------
 
-PyAbel python code was extracted from the following `ipython3 notebook <https://www.psi.ch/sls/vuv/Station1_IntroEN/Lin_Basex0.7.zip>`_ supplied by Thomas Gerber.
+PyAbel python code was extracted from the following `jupyter notebook <https://www.psi.ch/sls/vuv/Station1_IntroEN/Lin_Basex0.7.zip>`_ supplied by Thomas Gerber.
 
 
 Citation
