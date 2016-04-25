@@ -65,12 +65,6 @@ _linbasex_parameter_docstring = \
             for the case un=[0, 2]
             Beta0[k] vs k -> speed distribution
             Beta2[k] vs k -> anisotropy of each Newton sphere
-    direction: str
-        The type of Abel transform to be performed
-        only accepts value ``'inverse'``
-    verbose: bool
-        print information about the inversion process
-
 
     Returns
     -------
@@ -80,41 +74,38 @@ _linbasex_parameter_docstring = \
 
 
 def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5, 
-                       threshold=0.2,
-                       basis_dir='.', dr=1, return_Beta=False,
-                       direction="inverse", verbose=False):
+                       threshold=0.2, basis_dir='.', return_Beta=False,
+                       **kwargs):
     """wrapper function for linebasex to process supplied quadrant-image 
        as a full-image.
 
     PyAbel transform functions operate on the right side of an image.
     Here we follow the basex technique of duplicating the right side to
-    the left reforming a whole image.
+    the left re-forming the whole image.
 
     """
     Dat = np.atleast_2d(Dat)
 
-    # current code linbasex only likes odd-size square images
-    # not very efficient, better to simply process the whole image
     quad_rows, quad_cols = Dat.shape
     full_image = abel.tools.symmetry.put_image_quadrants((Dat, Dat, Dat, Dat),
                       original_image_shape=(quad_rows*2-1, quad_cols*2-1)) 
     
     # inverse Abel transform
-    recon, Beta = linbasex_transform_full(full_image, an=an, un=un, inc=inc,
-                                          basis_dir=basis_dir)
+    recon, Beta, QLz  = linbasex_transform_full(full_image, an=an, un=un,
+                                   inc=inc, basis_dir=basis_dir, **kwargs)
 
     # unpack right-side
     inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
     
     if return_Beta:
-        return inv_Dat, Beta
+        return inv_Dat, Beta, QLz
     else:
         return inv_Dat
 
 
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
-                            threshold=0.2, basis_dir='.', dr=1,
-                            return_Beta=False):
+                            threshold=0.2, basis_dir='.',
+                            return_Beta=False, **kwargs):
     """interface function that fetches/calculates the Basis and
        then evaluates the linbasex inverse Abel transform for the image.
 
@@ -128,16 +119,18 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
         raise ValueError('image has shape ({}, {}), '.format(rows, cols)+\
                          'must be square for a "linbasex" transform')
 
+    # generate basis or read from file if available
     Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
                   basis_dir=basis_dir,
                   basis_options=dict(an=an, un=un, inc=inc))
 
     return _linbasex_transform_with_basis(Dat, Basis, an=an, un=un, inc=inc,
-                                          sig_s=sig_s, threshold=threshold)
+                                          sig_s=sig_s, threshold=threshold,
+                                          **kwargs)
     
 
 def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
-                                    sig_s=0.5, threshold=0.2):
+                                    sig_s=0.5, threshold=0.2, **kwargs):
     """linbasex inverse Abel transform evaluated with supplied basis set Basis.
 
     """ 
@@ -174,9 +167,10 @@ def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
 
     inv_Dat = _Slices(Beta, un, sig_s=sig_s)
    
+    # normalize
     Beta = single_Beta_norm(Beta, threshold=threshold)
    
-    return inv_Dat, Beta
+    return inv_Dat, Beta, QLz
 
 linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
 
@@ -185,7 +179,7 @@ def beta_solve(Basis, bb, pol, rcond=0.0005):
     # set rcond to zero to switch conditioning off
 
     #define array for solutions. len(Basis[0,:])//pol is an integer.
-    Beta = np.zeros((pol, len(Basis[0, :])//pol))
+    Beta = np.zeros((pol, len(Basis[0])//pol))
 
     #solve equation
     Sol = np.linalg.lstsq(Basis, bb, rcond)
@@ -212,7 +206,7 @@ def _Slices(Beta, un, sig_s=0.5):
     """
 
     pol = len(un)
-    NP = len(Beta[0, :])  #number of points in 3_d plot.
+    NP = len(Beta[0])  #number of points in 3_d plot.
     index=range(NP)
 
     Beta_convol=np.zeros((pol, NP))
@@ -221,11 +215,11 @@ def _Slices(Beta, un, sig_s=0.5):
     #Define smoothing function
     Basis_s = np.fromfunction(
                   lambda i: np.exp(-(i-(NP)/2)**2/(2*sig_s**2))/\
-                                    (sig_s*2.5),(NP,))
+                                    (sig_s*2.5), (NP,))
 
     #Convolve Beta's with smoothing function
     for i in range(pol):
-        Beta_convol[i] = np.convolve(Basis_s, Beta[i,:], mode='same')
+        Beta_convol[i] = np.convolve(Basis_s, Beta[i], mode='same')
 
     for i in range(pol): #Calculate ordered slices:
         Slice_3D[i] = np.fromfunction(
