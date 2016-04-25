@@ -34,7 +34,7 @@ def test_linbasex_dribinski_image():
     """
 
     # BASEX sample image
-    IM = abel.tools.analytical.sample_image(n=1001, name="dribinski")
+    IM = abel.tools.analytical.sample_image()
 
     # hansenlaw forward projection
     fIM = abel.Transform(IM, method="hansenlaw", direction="forward").transform
@@ -51,8 +51,9 @@ def test_linbasex_dribinski_image():
     orig_speed /= orig_speed[50:125].max()
     speed /= speed[50:125].max()
     import matplotlib.pyplot as plt
-    plt.plot(orig_speed)
-    plt.plot(speed)
+    plt.plot(orig_speed, label='orig.')
+    plt.plot(speed, label='linbasex')
+    plt.legend()
     plt.show()
    
 
