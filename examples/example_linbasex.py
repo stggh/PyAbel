@@ -13,25 +13,14 @@ import matplotlib.pylab as plt
 # use scipy.misc.imread(filename) to load image formats (.png, .jpg, etc)
 print("LB: loading 'data/O2-ANU1024.txt.bz2'")
 IM = np.loadtxt("data/O2-ANU1024.txt.bz2")
-# linbasex likes square arrays
-IM = IM[:-1]
-
-rows, cols = IM.shape    # image size
-
-# Image center-line should be mid-pixel, i.e. odd number of columns
-if cols % 2 == 0: 
-    print ("LB: even pixel width image, re-adjusting image centre\n"
-           "    using `slice` method, returning odd-width size image")
-    IM = abel.tools.center.center_image(IM, center="slice", odd_size=True)
-    rows, cols = IM.shape   # new image size
 
 # inverse Abel transform
-AIM = abel.Transform(IM, method='linbasex',
-                     use_quadrants=(True, True, True, True),
-                     symmetry_axis=None,
-                     verbose=True).transform
+AIM = abel.Transform(IM, method='linbasex', center='convolution',
+                     center_options=dict(square=True, odd_size=True),
+                     transform_options=dict(return_Beta=True))
 
-radial, speeds  = abel.tools.vmi.angular_integration(AIM)
+recon = AIM.transform
+speed = AIM.linbasex_angular_integration
 
 # Set up some axes
 fig = plt.figure(figsize=(15, 4))
@@ -44,22 +33,23 @@ im1 = ax1.imshow(IM, aspect='auto')
 fig.colorbar(im1, ax=ax1, fraction=.1, shrink=0.9, pad=0.03)
 ax1.set_xlabel('x (pixels)')
 ax1.set_ylabel('y (pixels)')
-ax1.set_title('velocity map image: size {:d}x{:d}'.format(rows, cols))
+ax1.set_title('velocity map image: size {:d}x{:d}'.format(*IM.shape))
 
 # 2D transform
+cols = recon.shape[1]
 c2 = cols//2   # half-image width
-im2 = ax2.imshow(AIM, aspect='auto', vmin=0, vmax=AIM[:c2-50, :c2-50].max())
+im2 = ax2.imshow(recon, aspect='auto', vmin=0, vmax=recon[:c2-50, :c2-50].max())
 fig.colorbar(im2, ax=ax2, fraction=.1, shrink=0.9, pad=0.03)
 ax2.set_xlabel('x (pixels)')
 ax2.set_ylabel('y (pixels)')
-ax2.set_title('linbasex inverse Abel')
+ax2.set_title('linbasex inverse Abel: size {:d}x{:d}'.format(*recon.shape))
 
 # 1D speed distribution
-ax3.plot(radial, speeds/speeds[200:].max())
+ax3.plot(speed/speed[200:].max())
 ax3.axis(xmax=500, ymin=-0.05, ymax=1.1)
 ax3.set_xlabel('speed (pixel)')
 ax3.set_ylabel('intensity')
-ax3.set_title('speed distribution')
+ax3.set_title('speed distribution (Beta[0])')
 
 # Prettify the plot a little bit:
 plt.subplots_adjust(left=0.06, bottom=0.17, right=0.95, top=0.89, wspace=0.35,
