@@ -372,8 +372,7 @@ class Transform(object):
                                                  **center_options)
 
     def _abel_transform_image(self, **transform_options):
-        if self.method == "linbasex" and\
-           "return_Beta" in transform_options.keys():
+        if self.method == "linbasex" and self._symmetry_axis is not None: 
             self._abel_transform_image_full(**transform_options)
         else:
             self._abel_transform_image_by_quadrant(**transform_options)
@@ -391,13 +390,14 @@ class Transform(object):
                           .format(self.direction, self.method), 
                           '\n    image size: {:d}x{:d}'.format(*self.IM.shape))
 
-        self.transform, Beta = abel_transform[self.method](self.IM,
+        self.transform, Beta, QLz = abel_transform[self.method](self.IM,
                                                **transform_options)
 
         self._verboseprint("{:.2f} seconds".format(time.time()-t0))
 
         self.linbasex_angular_integration = Beta[0]
         self.linbasex_anisotropy_parameter = Beta[1]
+        self.linbasex_projection = QLz
             
 
     def _abel_transform_image_by_quadrant(self, **transform_options):

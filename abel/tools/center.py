@@ -268,7 +268,10 @@ def find_center_by_convolution(IM, **kwargs):
     #Take the first max, should there be several equal maxima.
     center = (np.argmax(conv_0)/2, np.argmax(conv_1)/2)
 
-    return center
+    if "projections" in kwargs.keys():
+        return center, conv_0, conv_1
+    else:
+        return center
 
 
 def find_center_by_center_of_image(data, verbose=False, **kwargs):

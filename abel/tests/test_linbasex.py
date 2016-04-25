@@ -28,33 +28,38 @@ def test_linbasex_zeros():
     assert_allclose(recon, 0)
 
 
-def test_linbasex_cyl_gaussian(n=101):
-    gauss = lambda r, r0, sigma: np.exp(-(r-r0)**2/sigma**2)
+def test_linbasex_dribinski_image():
+    """ Check hansenlaw forward/inverse transform
+        using BASEX sample image, comparing speed distributions
+    """
 
-    image_shape=(n, n)
-    rows, cols = image_shape
-    r2 = rows//2 + rows % 2
-    c2 = cols//2 + cols % 2
-    sigma = 20*n/100
+    # BASEX sample image
+    IM = abel.tools.analytical.sample_image(n=1001, name="dribinski")
 
-    x = np.linspace(-c2, c2, cols)
-    y = np.linspace(-r2, r2, rows)
+    # hansenlaw forward projection
+    fIM = abel.Transform(IM, method="hansenlaw", direction="forward").transform
 
-    X, Y = np.meshgrid(x, y)
+    # inverse Abel transform
+    ifIM = abel.Transform(fIM, method="linbasex",
+                          transform_options=dict(return_Beta=True))
 
-    IM = gauss(X, 0, sigma) # cylindrical Gaussian located at pixel R=0
-    Q0, Q1, Q2, Q3 = abel.tools.symmetry.get_image_quadrants(IM)
-    ospeed = abel.tools.vmi.angular_integration(Q0, origin=(0, 0))
+    # speed distribution
+    orig_speed, orig_radial = abel.tools.vmi.angular_integration(IM)
+    
+    speed = ifIM.linbasex_angular_integration
 
-    # linbasex method inverse Abel transform
-    AQ0 = abel.linbasex.linbasex_transform(Q0)
-    lspeed = abel.tools.vmi.angular_integration(AQ0, origin=(0, 0))
+    orig_speed /= orig_speed[50:125].max()
+    speed /= speed[50:125].max()
+    import matplotlib.pyplot as plt
+    plt.plot(orig_speed)
+    plt.plot(speed)
+    plt.show()
+   
 
-    ratio_2d = np.sqrt(np.pi)*sigma
+    assert np.allclose(orig_speed[50:125], speed[50:125], rtol=0.5, atol=0)
 
-    assert_allclose(ospeed[1], lspeed[1]*ratio_2d, rtol=0.0, atol=0.5)
 
 if __name__ == "__main__":
     test_linbasex_shape()
     test_linbasex_zeros()
-    test_linbasex_cyl_gaussian()
+    test_linbasex_dribinski_image()
