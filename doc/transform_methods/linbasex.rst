@@ -64,8 +64,24 @@ inverse Laplace transform of the image on the CCD from which we can derive
 
 When to use it
 --------------
+[ *another extract from comments by the method author Thomas Gerber*]
 
-tbd
+The advantage of ``linbasex`` is, that not so many projections are needed 
+(typically `len(an) ~ len(pol)`). So, ``linbasex`` evaluation using a 
+mathematically 
+appropriate and correct basis set should eventually be much faster 
+than ``basex``. 
+
+If our 3D object is "sparse" (i.e., contains a sparse set of Newton spheres) a 
+sparse basis may be used. In this case one must have primary information about 
+what "sparsity" is appropriate.
+
+That means that an Abel transform may be simplified if primary information 
+about the object is available. That is not the case with the other methods. 
+
+Absolute noise increases in each sphere with sqrt(counts) but relative noise 
+decreases with 1/sqrt(counts). 
+
 
 How to use it
 -------------
