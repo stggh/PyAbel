@@ -169,7 +169,7 @@ def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
    
     # normalize
     Beta = single_Beta_norm(Beta, threshold=threshold)
-   
+
     return inv_Dat, Beta, QLz
 
 linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
@@ -322,8 +322,8 @@ def _bas(ord, angle, COS, TRI):
 
 def _bs_linbasex(cols, an=[0, 90], un=[0, 2], inc=1):
 
-    pol = len(an)
-    proj = len(un)
+    pol = len(un)
+    proj = len(an)
 
     # Calculation of Base vectors
     # Define triangular matrix containing columns x/y (representing cos(θ)).
@@ -352,12 +352,13 @@ def _bs_linbasex(cols, an=[0, 90], un=[0, 2], inc=1):
 
     #Calculate base vectors for each projection and each order.
     B = np.zeros((pol, proj, len(COS[:, 0]), len(COS[0, :])))
+
     Norm = np.sum(_bas(0, 1, COS, TRI), axis=0)  #calculate normalization
     an_rad = np.radians(an)  #Express angles in radians
 
     for p in range(pol):
         for u in range(proj):
-            B[p, u, :, :] = _bas(un[p], np.cos(an_rad[u]), COS, TRI)/Norm 
+            B[p, u] = _bas(un[p], np.cos(an_rad[u]), COS, TRI)/Norm 
 
     #Concatenate vectors to one matrix of bases
     Bpol = np.concatenate((B), axis=2)

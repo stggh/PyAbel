@@ -8,7 +8,7 @@ import os.path
 import numpy as np
 import abel
 
-def get_bs_cached(method, cols, basis_dir='./', basis_options=dict(), verbose=False):
+def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(), verbose=False):
     """load basis set from disk, generate and store if not available.
 
     Parameters
@@ -57,7 +57,7 @@ def get_bs_cached(method, cols, basis_dir='./', basis_options=dict(), verbose=Fa
                 raise
             except:
                 raise
-    if D is None:
+    else:
         if verbose:
             print("A suitable operator matrix for '{}' was not found.\n"
                   .format(method), "A new operator matrix will be generated.")
