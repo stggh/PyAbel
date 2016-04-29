@@ -24,6 +24,7 @@ from scipy import ndimage
 #     84, no. 3 (March 1, 2013): 033101–033101 – 10. 
 #     doi:10.1063/1.4793404.
 # 
+# 2016-04-21 Thomas Gerber and Daniel Hickstein - theory and code updates
 # 2016-04-20 Stephen Gibson core code extracted from the supplied jupyter 
 #            notebook (see #167: https://github.com/PyAbel/PyAbel/issues/167)
 #
