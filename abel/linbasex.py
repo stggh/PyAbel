@@ -24,9 +24,9 @@ from scipy import ndimage
 #     84, no. 3 (March 1, 2013): 033101–033101 – 10. 
 #     doi:10.1063/1.4793404.
 # 
-# 2016-04-21 Thomas Gerber and Daniel Hickstein - theory and code updates
-# 2016-04-20 Stephen Gibson core code extracted from the supplied jupyter 
-#            notebook (see #167: https://github.com/PyAbel/PyAbel/issues/167)
+# 2016-04 Thomas Gerber and Daniel Hickstein - theory and code updates
+# 2016-04 Stephen Gibson core code extracted from the supplied jupyter 
+#         notebook (see #167: https://github.com/PyAbel/PyAbel/issues/167)
 #
 ################################################################################
 
@@ -42,19 +42,30 @@ _linbasex_parameter_docstring = \
       84, no. 3 (March 1, 2013): 033101–033101 – 10. 
       doi:10.1063/1.4793404.
 
+     linbasex determines the contribution of spherical functions, 
+     calculating the weight of each Y_i0. The reconstructed 3D object
+     is obtained by adding all the Y_i0 contributions, from which
+     slices are derived.
+
 
     Parameters
     ----------
     Dat: numpy 2D array
         image data must be square shape of odd size
     an: list
-        angles in degrees
+        projection angle, in degrees
         e.g. [0, 90] or [0, 54.7356, 90] or [0, 45, 90, 135]
+        In a single photon experiment there are only anisotropies up to 
+        second order. The interaction of 4 photons (four wave mixing) yields 
+        unisotropies up to order 8.
     un: list 
         order of Legendre polynomials to be used as the expansion
         even polynomials [0, 2, ...] gerade
         odd polynomials [1, 3, ...] ungerade
         all orders [0, 1, 2, ...]. 
+        For the case un=[0, 2]
+            Beta0[k] vs k -> speed distribution
+            Beta2[k] vs k -> anisotropy of each Newton sphere.
     inc: int
         number of pixels per Newton sphere (default 1)
     sig_s: float 
@@ -71,6 +82,15 @@ _linbasex_parameter_docstring = \
     -------
     inv_Data: numpy 2D array 
        inverse Abel transformed image
+    Beta: numpy 2D array  (if return_Beta=True)
+       contributions of each spherical harmonic Y_i0 to the 3D distribution.
+       contains all information one can get from an experiment.
+       for the case un=[0, 2]:
+           Beta0[k] vs k -> speed distribution
+           Beta2[k] vs k -> anisotropy of each Newton sphere
+    projections: numpy 2D array
+       Radial projection profiles at angles `an` 
+    
     """
 
 
@@ -81,7 +101,7 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
        as a full-image.
 
     PyAbel transform functions operate on the right side of an image.
-    Here we follow the basex technique of duplicating the right side to
+    Here we follow the ``basex`` technique of duplicating the right side to
     the left re-forming the whole image.
 
     """
