@@ -50,7 +50,9 @@ class Transform(object):
         with transform_options=dict(return_Beta=True), this attribute contains
         the anisotropy parameter varying with radius, evaluated directly from
         the Newton spheres
-        
+    linbasex_radial:
+        with transform_options=dict(return_Beta=True), this attribute contains
+        radial grid
         
     """
 
@@ -390,7 +392,7 @@ class Transform(object):
                           .format(self.direction, self.method), 
                           '\n    image size: {:d}x{:d}'.format(*self.IM.shape))
 
-        self.transform, Beta, QLz = abel_transform[self.method](self.IM,
+        self.transform, Beta, QLz, radial = abel_transform[self.method](self.IM,
                                                **transform_options)
 
         self._verboseprint("{:.2f} seconds".format(time.time()-t0))
@@ -398,6 +400,7 @@ class Transform(object):
         self.linbasex_angular_integration = Beta[0]
         self.linbasex_anisotropy_parameter = Beta[1]
         self.linbasex_projection = QLz
+        self.linbasex_radial = radial
             
 
     def _abel_transform_image_by_quadrant(self, **transform_options):

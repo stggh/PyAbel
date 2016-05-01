@@ -16,16 +16,18 @@ def test_linbasex_shape():
     n = 21
     x = np.ones((n, n), dtype='float32')
 
-    recon = abel.linbasex.linbasex_transform(x, direction='inverse')
-    assert recon.shape == (n, n) 
+    recon = abel.linbasex.linbasex_transform_full(x, basis_dir=None)
+
+    assert recon[0].shape == (n+1, n+1)   # NB shape+1
 
 
 def test_linbasex_zeros():
     n = 21
     x = np.zeros((n, n), dtype='float32')
 
-    recon = abel.linbasex.linbasex_transform(x, direction="inverse")
-    assert_allclose(recon, 0)
+    recon = abel.linbasex.linbasex_transform(x, basis_dir=None)
+
+    assert_allclose(recon[0], 0)
 
 
 def test_linbasex_dribinski_image():
@@ -41,18 +43,20 @@ def test_linbasex_dribinski_image():
 
     # inverse Abel transform
     ifIM = abel.Transform(fIM, method="linbasex",
-                          transform_options=dict(return_Beta=True))
+                          transform_options=dict(sig_s=0.1, clip=10,
+                                            basis_dir=None, return_Beta=True))
 
     # speed distribution
     orig_speed, orig_radial = abel.tools.vmi.angular_integration(IM)
     
     speed = ifIM.linbasex_angular_integration
+    radial = ifIM.linbasex_radial
 
     orig_speed /= orig_speed[50:125].max()
     speed /= speed[50:125].max()
     import matplotlib.pyplot as plt
     plt.plot(orig_speed, label='orig.')
-    plt.plot(speed, label='linbasex')
+    plt.plot(radial, speed, label='linbasex')
     plt.legend()
     plt.show()
    
