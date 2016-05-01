@@ -12,21 +12,20 @@ from scipy import ndimage
 
 ################################################################################
 # linbasex - inversion procedure based on 1-dimensional projections of 
-#            VM-images 
+#            velocity-map images 
 # 
-#  as described in:
-# Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi, 
-# Peter Radi, and Yaroslav Sych.
-# 
-# “Charged Particle Velocity Map Image Reconstruction with One-Dimensional
-#  Projections of Spherical Functions.” 
-# Review of Scientific Instruments 
-#     84, no. 3 (March 1, 2013): 033101–033101 – 10. 
+# As described in:
+#   Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi, 
+#   Peter Radi, and Yaroslav Sych,
+#     “Charged Particle Velocity Map Image Reconstruction with One-Dimensional
+#      Projections of Spherical Functions.” 
+#     Review of Scientific Instruments 84, no. 3 (March 1, 2013):
+#                                      033101–033101 – 10. 
 #     doi:10.1063/1.4793404.
 # 
-# 2016-04 Thomas Gerber and Daniel Hickstein - theory and code updates
-# 2016-04 Stephen Gibson core code extracted from the supplied jupyter 
-#         notebook (see #167: https://github.com/PyAbel/PyAbel/issues/167)
+# 2016-04- Thomas Gerber and Daniel Hickstein - theory and code updates
+# 2016-04- Stephen Gibson core code extracted from the supplied jupyter 
+#          notebook (see #167: https://github.com/PyAbel/PyAbel/issues/167)
 #
 ################################################################################
 
@@ -55,17 +54,14 @@ _linbasex_parameter_docstring = \
     an: list
         projection angle, in degrees
         e.g. [0, 90] or [0, 54.7356, 90] or [0, 45, 90, 135]
-        In a single photon experiment there are only anisotropies up to 
-        second order. The interaction of 4 photons (four wave mixing) yields 
-        unisotropies up to order 8.
     un: list 
         order of Legendre polynomials to be used as the expansion
-        even polynomials [0, 2, ...] gerade
-        odd polynomials [1, 3, ...] ungerade
-        all orders [0, 1, 2, ...]. 
-        For the case un=[0, 2]
-            Beta0[k] vs k -> speed distribution
-            Beta2[k] vs k -> anisotropy of each Newton sphere.
+            even polynomials [0, 2, ...] gerade
+            odd polynomials [1, 3, ...] ungerade
+            all orders [0, 1, 2, ...]. 
+        In a single photon experiment there are only anisotropies up to 
+        second order. The interaction of 4 photons (four wave mixing) yields 
+        anisotropies up to order 8.
     inc: int
         number of pixels per Newton sphere (default 1)
     sig_s: float 
@@ -113,7 +109,7 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
     
     # inverse Abel transform
     recon, Beta, QLz  = linbasex_transform_full(full_image, an=an, un=un,
-                                   inc=inc, basis_dir=basis_dir, **kwargs)
+                         inc=inc, sig_s=sig_s, basis_dir=basis_dir, **kwargs)
 
     # unpack right-side
     inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
@@ -125,8 +121,8 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 
 
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
-                            threshold=0.2, basis_dir='.',
-                            return_Beta=False, **kwargs):
+                            threshold=0.2, basis_dir='.', return_Beta=False,
+                            **kwargs):
     """interface function that fetches/calculates the Basis and
        then evaluates the linbasex inverse Abel transform for the image.
 
@@ -150,8 +146,8 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                                           **kwargs)
     
 
-def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
-                                    sig_s=0.5, threshold=0.2, **kwargs):
+def _linbasex_transform_with_basis(Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
+                                   sig_s=0.5, threshold=0.2, **kwargs):
     """linbasex inverse Abel transform evaluated with supplied basis set Basis.
 
     """ 
@@ -169,8 +165,7 @@ def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
     QLz =np.zeros((proj, cols))  #Define array for projections.
 
     # Rotate and project VMI-image for each angle (as many as projections)
-    an=np.array(an)
-    if an.all == [0, 90]:
+    if an == [0, 90]:
         # If coordinates of the detector coincide with the projection
         # directions unnecessary rotations are avoided, i.e.an=[0, 90] degrees
         QLz[0] = np.sum(Dat, axis=1)
@@ -186,10 +181,10 @@ def _linbasex_transform_with_basis (Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
 
     Beta = beta_solve(Basis, bb, pol)
 
-    inv_Dat = _Slices(Beta, un, sig_s=sig_s)
+    inv_Dat, Beta_convol = _Slices(Beta, un, sig_s=sig_s)
    
     # normalize
-    Beta = single_Beta_norm(Beta, threshold=threshold)
+    Beta = single_Beta_norm(Beta_convol, threshold=threshold)
 
     return inv_Dat, Beta, QLz
 
@@ -234,22 +229,21 @@ def _Slices(Beta, un, sig_s=0.5):
     Slice_3D=np.zeros((pol, 2*NP, 2*NP)) 
 
     #Define smoothing function
-    Basis_s = np.fromfunction(
-                  lambda i: np.exp(-(i-(NP)/2)**2/(2*sig_s**2))/\
-                                    (sig_s*2.5), (NP,))
+    Basis_s = np.fromfunction(lambda i: np.exp(-(i-(NP)/2)**2/(2*sig_s**2))/\
+                              (sig_s*2.5), (NP,))
 
     #Convolve Beta's with smoothing function
     for i in range(pol):
         Beta_convol[i] = np.convolve(Basis_s, Beta[i], mode='same')
 
-    for i in range(pol): #Calculate ordered slices:
-        Slice_3D[i] = np.fromfunction(
-                  lambda k, l: _SL(i, (k-NP),(l-NP), Beta_convol, index, un), 
-                                  (2*NP, 2*NP))
+    #Calculate ordered slices:
+    for i in range(pol):
+        Slice_3D[i] = np.fromfunction(lambda k, l: _SL(i, (k-NP),(l-NP),
+                                      Beta_convol, index, un), (2*NP, 2*NP))
 
     Slice = np.sum(Slice_3D, axis=0) #Sum ordered slices up
 
-    return Slice
+    return Slice, Beta_convol
 
 
 def int_beta(Beta, inc=1, regions=[(37, 40), (69, 72), (89, 92),
@@ -309,7 +303,7 @@ def single_Beta_norm(Beta, threshold=0.2, clip=(0, -1)):
     clip: tuple (int, int)
         (clip_low, clip_high)
         normalize to Newton sphere with maximum counts in chosen range.
-        Beta[0,clip_low:clip_high]
+        Beta[0, clip_low:clip_high]
 
     Return
     ------
@@ -375,11 +369,11 @@ def _bs_linbasex(cols, an=[0, 90], un=[0, 2], inc=1):
     B = np.zeros((pol, proj, len(COS[:, 0]), len(COS[0, :])))
 
     Norm = np.sum(_bas(0, 1, COS, TRI), axis=0)  #calculate normalization
-    an_rad = np.radians(an)  #Express angles in radians
+    cos_an = np.cos(np.radians(an))  #Express angles in radians
 
     for p in range(pol):
         for u in range(proj):
-            B[p, u] = _bas(un[p], np.cos(an_rad[u]), COS, TRI)/Norm 
+            B[p, u] = _bas(un[p], cos_an[u], COS, TRI)/Norm 
 
     #Concatenate vectors to one matrix of bases
     Bpol = np.concatenate((B), axis=2)
