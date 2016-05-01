@@ -55,25 +55,28 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
                 print("Loading {} operator matrix...".method)
             try:
                 D = np.load(path_to_basis_file)
+                return D 
             except ValueError:
                 raise
             except:
                 raise
-    else:
-        if verbose:
-            print("A suitable operator matrix for '{}' was not found.\n"
-                  .format(method), "A new operator matrix will be generated.")
-            if basis_dir is not None:
-                print("But don\'t worry, it will be saved to disk \
-                    for future use.\n")
-            else:
-                pass
-
-        D = basis_generator[method](cols, **basis_options)
-
+        
+    if verbose:
+        print("A suitable operator matrix for '{}' was not found.\n"
+              .format(method), 
+              "A new operator matrix will be generated.")
         if basis_dir is not None:
-            np.save(path_to_basis_file, D)
-            if verbose:
-                print("Operator matrix saved for later use to,")
-                print(' '*10 + '{}'.format(path_to_basis_file))
+            print("But don\'t worry, it will be saved to disk for future",
+                  " use.\n")
+        else:
+            pass
+
+    D = basis_generator[method](cols, **basis_options)
+
+    if basis_dir is not None:
+        np.save(path_to_basis_file, D)
+        if verbose:
+            print("Operator matrix saved for later use to,")
+            print(' '*10 + '{}'.format(path_to_basis_file))
+
     return D
