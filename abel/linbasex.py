@@ -102,7 +102,8 @@ _linbasex_parameter_docstring = \
 
 def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                        rcond=0.0005, threshold=0.2, basis_dir='.',
-                       return_Beta=False, clip=0, norm_range=(0, -1)):
+                       return_Beta=False, clip=0, norm_range=(0, -1),
+                       verbose=False):
     """wrapper function for linebasex to process supplied quadrant-image
        as a full-image.
 
@@ -120,7 +121,8 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
     # inverse Abel transform
     recon, Beta, QLz = linbasex_transform_full(full_image, an=an, un=un,
                          inc=inc, sig_s=sig_s, basis_dir=basis_dir,
-                         threshold=threshold, clip=clip, norm_range=norm_range)
+                         threshold=threshold, clip=clip, norm_range=norm_range,
+                         verbose=verbose)
 
     # unpack right-side
     inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
@@ -133,7 +135,8 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                             rcond=0.0005, threshold=0.2, clip=0, basis_dir='.',
-                            return_Beta=False, norm_range=(0, -1)):
+                            return_Beta=False, norm_range=(0, -1),
+                            verbose=False):
     """interface function that fetches/calculates the Basis and
        then evaluates the linbasex inverse Abel transform for the image.
 
@@ -150,17 +153,20 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
     # generate basis or read from file if available
     Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
                   basis_dir=basis_dir,
-                  basis_options=dict(an=an, un=un, inc=inc, clip=clip))
+                  basis_options=dict(an=an, un=un, inc=inc, clip=clip,
+                                     verbose=verbose))
 
     return _linbasex_transform_with_basis(Dat, Basis, an=an, un=un, inc=inc,
                                           rcond=rcond, sig_s=sig_s,
                                           threshold=threshold, clip=clip,
-                                          norm_range=norm_range)
+                                          norm_range=norm_range,
+                                          verbose=verbose)
 
 
 def _linbasex_transform_with_basis(Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
                                    rcond=0.0005, sig_s=0.5, threshold=0.2,
-                                   clip=0, norm_range=(0, -1)):
+                                   clip=0, norm_range=(0, -1),
+                                   verbose=False):
     """linbasex inverse Abel transform evaluated with supplied basis set Basis.
 
     """
@@ -351,7 +357,7 @@ def _bas(ord, angle, COS, TRI):
     return basis_vec
 
 
-def _bs_linbasex(cols, an=[0, 90], un=[0, 2], inc=1, clip=0):
+def _bs_linbasex(cols, an=[0, 90], un=[0, 2], inc=1, clip=0, **kwargs):
 
     pol = len(un)
     proj = len(an)
