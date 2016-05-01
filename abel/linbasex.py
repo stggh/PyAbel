@@ -332,7 +332,6 @@ def single_Beta_norm(Beta, threshold=0.2, norm_range=(0, -1)):
     # Normalized to Newton sphere with maximum counts in chosen range.
     max_counts = Beta[0, norm_range[0]:norm_range[1]].max()
 
-    print("----- max_counts = {}".format(max_counts))
     Beta_norm[0] = Beta[0]/max_counts
     for i in range(1, pol):
         Beta_norm[i] = np.where(Beta[0]/max_counts > threshold,
