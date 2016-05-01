@@ -83,6 +83,12 @@ _linbasex_parameter_docstring = \
             for the case un=[0, 2]
             Beta0[k] vs k -> speed distribution
             Beta2[k] vs k -> anisotropy of each Newton sphere
+    direction: str
+        "inverse" - only option for this method.
+        Abel transform direction.
+    verbose: bool
+        print information about processing (normally used for debugging)
+
 
     Returns
     -------
@@ -103,7 +109,7 @@ _linbasex_parameter_docstring = \
 def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                        rcond=0.0005, threshold=0.2, basis_dir='.',
                        return_Beta=False, clip=0, norm_range=(0, -1),
-                       verbose=False):
+                       direction="inverse", verbose=False, **kwargs):
     """wrapper function for linebasex to process supplied quadrant-image
        as a full-image.
 
@@ -119,10 +125,11 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                            original_image_shape=(quad_rows*2-1, quad_cols*2-1))
 
     # inverse Abel transform
-    recon, Beta, QLz = linbasex_transform_full(full_image, an=an, un=un,
-                         inc=inc, sig_s=sig_s, basis_dir=basis_dir,
-                         threshold=threshold, clip=clip, norm_range=norm_range,
-                         verbose=verbose)
+    recon, Beta, QLz, radial = linbasex_transform_full(full_image, an=an, un=un,
+                                inc=inc, sig_s=sig_s, basis_dir=basis_dir,
+                                threshold=threshold, clip=clip,
+                                norm_range=norm_range,
+                                verbose=verbose, **kwargs)
 
     # unpack right-side
     inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
@@ -136,7 +143,7 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
 def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                             rcond=0.0005, threshold=0.2, clip=0, basis_dir='.',
                             return_Beta=False, norm_range=(0, -1),
-                            verbose=False):
+                            direction="inverse", verbose=False, **kwargs):
     """interface function that fetches/calculates the Basis and
        then evaluates the linbasex inverse Abel transform for the image.
 
@@ -159,14 +166,12 @@ def linbasex_transform_full(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
     return _linbasex_transform_with_basis(Dat, Basis, an=an, un=un, inc=inc,
                                           rcond=rcond, sig_s=sig_s,
                                           threshold=threshold, clip=clip,
-                                          norm_range=norm_range,
-                                          verbose=verbose)
+                                          norm_range=norm_range)
 
 
 def _linbasex_transform_with_basis(Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
                                    rcond=0.0005, sig_s=0.5, threshold=0.2,
-                                   clip=0, norm_range=(0, -1),
-                                   verbose=False):
+                                   clip=0, norm_range=(0, -1)):
     """linbasex inverse Abel transform evaluated with supplied basis set Basis.
 
     """
