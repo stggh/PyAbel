@@ -8,7 +8,8 @@ import os.path
 import numpy as np
 import abel
 
-def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(), verbose=False):
+def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
+                  verbose=False):
     """load basis set from disk, generate and store if not available.
 
     Parameters
@@ -41,8 +42,9 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(), verbose=Fal
 
     basis_name = "{}_basis_{}_{}".format(method, cols, cols)
     if method == "linbasex" and basis_options.keys():
-       basis_name += "_{}_{}".format(len(basis_options['un']),
-                                     len(basis_options['an']))
+       basis_name += "_{}_{}_{}".format(len(basis_options['un']),
+                                        len(basis_options['an']),
+                                        basis_options['clip'])
     basis_name += ".npy"
 
     D = None
