@@ -30,20 +30,16 @@ from scipy import ndimage
 ###############################################################################
 
 _linbasex_parameter_docstring = \
-    """Inverse Abel transform using 1d projections of VM-images.
+    r"""Inverse Abel transform using 1d projections of VM-images.
 
-    Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi,
+    `Gerber, Thomas, Yuzhu Liu, Gregor Knopp, Patrick Hemberger, Andras Bodi,
     Peter Radi, and Yaroslav Sych.
-
-    `Charged Particle Velocity Map Image Reconstruction with One-Dimensional
-     Projections of Spherical Functions.`
-     Review of Scientific Instruments
-      84, no. 3 (March 1, 2013): 033101–033101 – 10.
-      doi:10.1063/1.4793404.
+    Charged Particle Velocity Map Image Reconstruction with One-Dimensional Projections of Spherical Functions.` Review of Scientific Instruments 84, no. 3 (March 1, 2013): 033101–033101 – 10.
+    <http://dx.doi.org/10.1063/1.4793404>`_
 
      linbasex determines the contribution of spherical functions,
-     calculating the weight of each Y_i0. The reconstructed 3D object
-     is obtained by adding all the Y_i0 contributions, from which
+     calculating the weight of each :math:`Y_{i0}`. The reconstructed 3D object
+     is obtained by adding all the :math:`Y_{i0}` contributions, from which
      slices are derived.
 
 
@@ -95,7 +91,7 @@ _linbasex_parameter_docstring = \
     inv_Data: numpy 2D array
        inverse Abel transformed image
     Beta: numpy 2D array  (if return_Beta=True)
-       contributions of each spherical harmonic Y_i0 to the 3D distribution.
+       contributions of each spherical harmonic :math:`Y_{i0}` to the 3D distribution.
        contains all information one can get from an experiment.
        for the case un=[0, 2]:
            Beta0[k] vs k -> speed distribution
@@ -110,11 +106,10 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                        rcond=0.0005, threshold=0.2, basis_dir='.',
                        return_Beta=False, clip=0, norm_range=(0, -1),
                        direction="inverse", verbose=False, **kwargs):
-    """wrapper function for linebasex to process supplied quadrant-image
-       as a full-image.
+    """wrapper function for linebasex to process supplied quadrant-image as a full-image.
 
     PyAbel transform functions operate on the right side of an image.
-    Here we follow the ``basex`` technique of duplicating the right side to
+    Here we follow the `basex` technique of duplicating the right side to
     the left re-forming the whole image.
 
     """
@@ -203,13 +198,13 @@ def _linbasex_transform_with_basis(Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
     # arrange all projections for input into "lstsq"
     bb = np.concatenate(QLz, axis=0)
 
-    Beta = beta_solve(Basis, bb, pol, rcond=rcond)
+    Beta = _beta_solve(Basis, bb, pol, rcond=rcond)
 
     inv_Dat, Beta_convol = _Slices(Beta, un, sig_s=sig_s)
 
     # normalize
-    Beta = single_Beta_norm(Beta_convol, threshold=threshold,
-                            norm_range=norm_range)
+    Beta = _single_Beta_norm(Beta_convol, threshold=threshold,
+                             norm_range=norm_range)
 
     radial = np.linspace(clip, cols//2, len(Beta[0]))
 
@@ -218,7 +213,7 @@ def _linbasex_transform_with_basis(Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
 linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
 
 
-def beta_solve(Basis, bb, pol, rcond=0.0005):
+def _beta_solve(Basis, bb, pol, rcond=0.0005):
     # set rcond to zero to switch conditioning off
 
     # array for solutions. len(Basis[0,:])//pol is an integer.
@@ -318,7 +313,7 @@ def int_beta(Beta, inc=1, threshold=0.1, regions=[(37, 40), (69, 72), (89, 92),
     return Beta_int
 
 
-def single_Beta_norm(Beta, threshold=0.2, norm_range=(0, -1)):
+def _single_Beta_norm(Beta, threshold=0.2, norm_range=(0, -1)):
     """Normalize Newton spheres.
 
     Parameters
@@ -337,7 +332,8 @@ def single_Beta_norm(Beta, threshold=0.2, norm_range=(0, -1)):
 
     Return
     ------
-    Beta: Newton spheres
+    Beta: numpy array
+        normalized Beta array
 
     """
     pol = Beta.shape[0]
