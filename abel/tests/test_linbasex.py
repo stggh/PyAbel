@@ -21,51 +21,36 @@ def test_linbasex_shape():
     assert recon[0].shape == (n+1, n+1)   # NB shape+1
 
 
-#def test_linbasex_zeros():
-#    n = 21
-#    x = np.zeros((n, n), dtype='float32')
-#
-#    recon = abel.linbasex.linbasex_transform(x, basis_dir=None)
-#
-#    assert_allclose(recon[0], 0)
-
 def test_linbasex_forward_dribinski_image():
     """ Check hansenlaw forward/inverse transform
         using BASEX sample image, comparing speed distributions
     """
 
     # BASEX sample image
-    IM = abel.tools.analytical.sample_image(n=1001, name="dribinski").transform
+    IM = abel.tools.analytical.sample_image(n=1001, name="dribinski")
 
     # forward Abel transform
-    fIM = abel.Transform(IM, method='hansenlaw', direction='forward').transform
+    fIM = abel.Transform(IM, method='hansenlaw', direction='forward')
 
     # inverse Abel transform
-    ifIM = abel.Transform(fIM, method='linbasex',
-                          transform_options=dict(return_Beta=True))
+    ifIM = abel.Transform(fIM.transform, method='linbasex',
+                          transform_options=dict(sig_s=0, inc=1, 
+                                            un=[0, 2], an=[0, 90],
+                                            return_Beta=True))
 
     # speed distribution
-    orig_radial, orig_speed, orig_radial =\
-                                 abel.tools.vmi.angular_integration(IM)
+    orig_radial, orig_speed = abel.tools.vmi.angular_integration(IM)
 
 
     radial = ifIM.linbasex_radial
     speed = ifIM.linbasex_angular_integration
 
-    orig_speed /= orig_speed[50:125].max()
-    speed /= speed[50:125].max()
+    orig_speed /= orig_speed[1:60].max()
+    speed /= speed[1:60].max()
 
-    import matplotlib.pyplot as plt
-    plt.plot(orig_speed)
-    plt.plot(speed)
-    plt.show()
-
-
-    assert np.allclose(orig_speed[50:125], speed[50:125], rtol=0.5, atol=0)
-
+    assert np.allclose(orig_speed[1:60], speed[1:60], rtol=0, atol=0.1)
 
 
 if __name__ == "__main__":
     test_linbasex_shape()
-#    test_linbasex_zeros()
     test_linbasex_forward_dribinski_image()

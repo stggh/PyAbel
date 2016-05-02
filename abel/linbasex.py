@@ -255,12 +255,12 @@ def _Slices(Beta, un, sig_s=0.5):
     Beta_convol = np.zeros((pol, NP))
     Slice_3D = np.zeros((pol, 2*NP, 2*NP))
 
-    # smoothing function
-    Basis_s = np.fromfunction(lambda i: np.exp(-(i-(NP)/2)**2/(2*sig_s**2)) /
-                              (sig_s*2.5), (NP,))
 
     # Convolve Beta's with smoothing function
     if sig_s > 0:
+        # smoothing function
+        Basis_s = np.fromfunction(lambda i: np.exp(-(i-(NP)/2)**2/(2*sig_s**2))/
+                              (sig_s*2.5), (NP,))
         for i in range(pol):
             Beta_convol[i] = np.convolve(Basis_s, Beta[i], mode='same')
     else:
