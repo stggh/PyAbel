@@ -29,27 +29,43 @@ def test_linbasex_shape():
 #
 #    assert_allclose(recon[0], 0)
 
+def test_linbasex_forward_dribinski_image():
+    """ Check hansenlaw forward/inverse transform
+        using BASEX sample image, comparing speed distributions
+    """
 
-#def test_linbasex_step_ratio():
-#  
-#    n = 51
-#    r_max = 25
-#
-#    ref = abel.tools.analytical.GaussianAnalytical(n, r_max, symmetric=True,
-#                                                   sigma=10)
-#
-#    tr = np.tile(ref.abel[None, :], (n, 1)) # make a 2D array from 1D
-#
-#    recon = abel.Transform(tr, method="linbasex").transform
-#
-#    recon1d = recon[n//2 + n%2]
-#
-#    ratio = abel.benchmark.absolute_ratio_benchmark(ref, recon1d)
-#
-#    assert_allclose( ratio , 1.0, rtol=3e-2, atol=0)
+    # BASEX sample image
+    IM = abel.tools.analytical.sample_image(n=1001, name="dribinski").transform
+
+    # forward Abel transform
+    fIM = abel.Transform(IM, method='hansenlaw', direction='forward').transform
+
+    # inverse Abel transform
+    ifIM = abel.Transform(fIM, method='linbasex',
+                          transform_options=dict(return_Beta=True))
+
+    # speed distribution
+    orig_radial, orig_speed, orig_radial =\
+                                 abel.tools.vmi.angular_integration(IM)
+
+
+    radial = ifIM.linbasex_radial
+    speed = ifIM.linbasex_angular_integration
+
+    orig_speed /= orig_speed[50:125].max()
+    speed /= speed[50:125].max()
+
+    import matplotlib.pyplot as plt
+    plt.plot(orig_speed)
+    plt.plot(speed)
+    plt.show()
+
+
+    assert np.allclose(orig_speed[50:125], speed[50:125], rtol=0.5, atol=0)
+
 
 
 if __name__ == "__main__":
     test_linbasex_shape()
 #    test_linbasex_zeros()
-#    test_linbasex_step_ratio()
+    test_linbasex_forward_dribinski_image()

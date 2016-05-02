@@ -132,15 +132,14 @@ def test_hansenlaw_forward_dribinski_image():
     ifQ0 = abel.hansenlaw.hansenlaw_transform(fQ0, direction='inverse')
     
     # speed distribution
-    orig_speed, orig_radial = abel.tools.vmi.angular_integration(Q0, 
-                              origin=(0,0), Jacobian=True)
+    orig_radial, orig_speed = abel.tools.vmi.angular_integration(Q0, 
+                                             origin=(0,0), Jacobian=True)
 
-    speed, radial_coords = abel.tools.vmi.angular_integration(ifQ0,
-                           origin=(0,0), Jacobian=True)
+    radial_coords, speed = abel.tools.vmi.angular_integration(ifQ0,
+                                          origin=(0,0), Jacobian=True)
 
     orig_speed /= orig_speed[50:125].max()
     speed /= speed[50:125].max()
-    
 
     assert np.allclose(orig_speed[50:125], speed[50:125], rtol=0.5, atol=0)
 
