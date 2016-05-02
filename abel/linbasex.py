@@ -260,8 +260,11 @@ def _Slices(Beta, un, sig_s=0.5):
                               (sig_s*2.5), (NP,))
 
     # Convolve Beta's with smoothing function
-    for i in range(pol):
-        Beta_convol[i] = np.convolve(Basis_s, Beta[i], mode='same')
+    if sig_s > 0:
+        for i in range(pol):
+            Beta_convol[i] = np.convolve(Basis_s, Beta[i], mode='same')
+    else:
+        Beta_convol = Beta
 
     # Calculate ordered slices:
     for i in range(pol):
