@@ -32,27 +32,26 @@ class Transform(object):
     transform: numpy 2D array 
         the 2D forward/reverse Abel transform.
     angular_integration : tuple
-        radial coordinates, with the radial intensity (speed) distribution.
+        (radial-grid, radial-intensity)
+        radial coordinates, and the radial intensity (speed) distribution,
+        evaluated using :func:`abel.tools.vmi.angular_integration()`.
     residual: numpy 2D array
         residual image (not currently implemented).
     IM: numpy 2D array
-        the input image, re-centered (optional) with an odd-size width
+        the input image, re-centered (optional) with an odd-size width.
     method: str
         transform method, as specified by the input option.
     direction: str
         transform direction, as specified by the input option.
 
-    linbasex_angular_integration:
-        with transform_options=dict(return_Beta=True), this attribute contains
-        the radial intensity (speed) distribution, evaluated directly from 
-        the Newton spheres
-    linbasex_anisotropy_parameter:
-        with transform_options=dict(return_Beta=True), this attribute contains
-        the anisotropy parameter varying with radius, evaluated directly from
-        the Newton spheres
-    linbasex_radial:
-        with transform_options=dict(return_Beta=True), this attribute contains
-        radial grid
+    linbasex_angular_integration: tuple
+        with :func:`transform_options=dict(return_Beta=True)`
+        (radial-grid, radial-intensity) 
+        the 'speed' distribution, evaluated directly from the Newton spheres.
+    linbasex_anisotropy_parameter: tuple
+        with :func:`transform_options=dict(return_Beta=True)`
+        (radial-grid, anisotropy-parameter)
+        evaluated directly from the Newton spheres.
         
     """
 
@@ -124,6 +123,8 @@ class Transform(object):
 
             ``image_center``
                 center is assumed to be the center of the image.
+            ``convolution``
+                center the image by convolution of two projections along each axis.
             ``slice``
                 the center is found my comparing slices in the horizontal and
                 vertical directions
@@ -392,14 +393,15 @@ class Transform(object):
                           .format(self.direction, self.method), 
                           '\n    image size: {:d}x{:d}'.format(*self.IM.shape))
 
-        self.transform, Beta, QLz, radial = abel_transform[self.method](self.IM,
-                                               **transform_options)
+        self.transform, radial, Beta, QLz = abel_transform[self.method](self.IM,
+                                                   **transform_options)
 
         self._verboseprint("{:.2f} seconds".format(time.time()-t0))
 
-        self.linbasex_angular_integration = Beta[0]
-        self.linbasex_anisotropy_parameter = Beta[1]
+        self.linbasex_angular_integration = (radial, Beta[0])
+        self.linbasex_anisotropy_parameter = (radial, Beta[1])
         self.linbasex_projection = QLz
+        self.linbasex_Beta = Beta
         self.linbasex_radial = radial
             
 

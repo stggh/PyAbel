@@ -116,6 +116,12 @@ To complete the forward or inverse transform of a full image with the
     abel.Transform(myImage, method='hansenlaw', direction='forward').transform
     abel.Transform(myImage, method='hansenlaw', direction='inverse').transform
 
+A more complete global call, that centers the image, ensures an odd-size width,
+and returns the speed distribution as the attribute ``.angular_integration`` 
+a tuple :attr:`(radial, speed)`, would be, e.g.::
+
+   abel.Transform(myImage, method='hansenlaw', direction='inverse',
+                  center='slice', angular_integration=True)
 
 If you would like to access the Hansen-Law algorithm directly (to transform a 
 right-side half-image), you can use :func:`abel.hansenlaw.hansenlaw_transform`.
