@@ -110,7 +110,7 @@ _linbasex_parameter_docstring = \
     """
 
 
-def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
+def linbasex_transform(Dat, an=[0, 45, 90, 135], un=[0, 2], inc=1, sig_s=0.5,
                        rcond=0.0005, threshold=0.2, basis_dir='.',
                        return_Beta=False, clip=0, norm_range=(0, -1),
                        direction="inverse", verbose=False, **kwargs):
