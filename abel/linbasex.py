@@ -75,10 +75,13 @@ _linbasex_parameter_docstring = \
         normalization of Newton sphere, maximum in range
         Beta[0, low:high]
     return_Beta: bool
-        return the Beta array of Newton spheres
-            for the case un=[0, 2]
-            Beta0[k] vs k -> speed distribution
-            Beta2[k] vs k -> anisotropy of each Newton sphere
+        return the Beta array of Newton spheres, as the tuple (radial-grid, Beta)
+            for the case :attr:`un=[0, 2]`
+
+            Beta[0] vs radius -> speed distribution
+
+            Beta[2] vs radius -> anisotropy of each Newton sphere
+        see 'Returns'.
     direction: str
         "inverse" - only option for this method.
         Abel transform direction.
@@ -90,14 +93,19 @@ _linbasex_parameter_docstring = \
     -------
     inv_Data: numpy 2D array
        inverse Abel transformed image
-    Beta: numpy 2D array  (if return_Beta=True)
-       contributions of each spherical harmonic :math:`Y_{i0}` to the 3D distribution.
-       contains all information one can get from an experiment.
-       for the case un=[0, 2]:
-           Beta0[k] vs k -> speed distribution
-           Beta2[k] vs k -> anisotropy of each Newton sphere
-    projections: numpy 2D array
-       Radial projection profiles at angles `an`
+
+    radial-grid, Beta, projections: tuple
+       (if :attr:`return_Beta=True`)
+  
+       contributions of each spherical harmonic :math:`Y_{i0}` to the 3D 
+       distribution contain all the information one can get from an experiment.
+       For the case :attr:`un=[0, 2]`:
+
+           Beta[0] vs radius -> speed distribution
+
+           Beta[2] vs radius -> anisotropy of each Newton sphere.
+
+       projections: are the radial projection profiles at angles `an`
 
     """
 
@@ -120,17 +128,17 @@ def linbasex_transform(Dat, an=[0, 90], un=[0, 2], inc=1, sig_s=0.5,
                            original_image_shape=(quad_rows*2-1, quad_cols*2-1))
 
     # inverse Abel transform
-    recon, Beta, QLz, radial = linbasex_transform_full(full_image, an=an, un=un,
-                                inc=inc, sig_s=sig_s, basis_dir=basis_dir,
-                                threshold=threshold, clip=clip,
-                                norm_range=norm_range,
-                                verbose=verbose, **kwargs)
+    recon, radial, Beta, QLz = linbasex_transform_full(full_image, an=an, un=un,
+                                 inc=inc, sig_s=sig_s, basis_dir=basis_dir,
+                                 threshold=threshold, clip=clip,
+                                 norm_range=norm_range,
+                                 verbose=verbose, **kwargs)
 
     # unpack right-side
     inv_Dat = abel.tools.symmetry.get_image_quadrants(recon)[0]
 
     if return_Beta:
-        return inv_Dat, Beta, QLz
+        return inv_Dat, radial, Beta, QLz
     else:
         return inv_Dat
 
@@ -208,7 +216,7 @@ def _linbasex_transform_with_basis(Dat, Basis, an=[0, 90], un=[0, 2], inc=1,
 
     radial = np.linspace(clip, cols//2, len(Beta[0]))
 
-    return inv_Dat, Beta, QLz, radial
+    return inv_Dat, radial, Beta, QLz
 
 linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
 

@@ -21,7 +21,7 @@ AIM = abel.Transform(IM, method='linbasex', center='convolution',
                                             an=range(0, 180, 10)))
 
 recon = AIM.transform
-speed = AIM.linbasex_angular_integration
+radial, speed = AIM.linbasex_angular_integration
 
 # Set up some axes
 fig = plt.figure(figsize=(15, 4))
@@ -46,7 +46,7 @@ ax2.set_ylabel('y (pixels)')
 ax2.set_title('linbasex inverse Abel: size {:d}x{:d}'.format(*recon.shape))
 
 # 1D speed distribution
-ax3.plot(speed/speed[200:].max())
+ax3.plot(radial, speed/speed[200:].max())
 ax3.axis(xmax=500, ymin=-0.05, ymax=1.1)
 ax3.set_xlabel('speed (pixel)')
 ax3.set_ylabel('intensity')
