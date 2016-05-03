@@ -17,7 +17,7 @@ IM = np.loadtxt("data/O2-ANU1024.txt.bz2")
 # inverse Abel transform
 AIM = abel.Transform(IM, method='linbasex', center='convolution',
                      center_options=dict(square=True, odd_size=True),
-                     transform_options=dict(return_Beta=True, 
+                     transform_options=dict(return_Beta=True,
                                             an=range(0, 180, 10)))
 
 recon = AIM.transform
