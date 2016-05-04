@@ -127,6 +127,20 @@ and returns the attributes above, would be e.g. ::
 Alternatively, the linbasex algorithm :func:`abel.linbasex.linbasex_transform_full()` directly 
 transforms the full image, with the attributes returned as a tuple in this case.
 
+<<<<<<< HEAD
+=======
+Tips
+----
+
+Including more projection (angles) may improve the transform: ::
+   
+  an = [0, 45, 90, 135]
+
+or ::
+
+  an = arange(0, 180, 10)
+
+>>>>>>> 6d62e1622322ce252e06d451a9b0bd54c513753f
 Example
 -------
 
