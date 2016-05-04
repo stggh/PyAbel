@@ -75,7 +75,7 @@ _linbasex_parameter_docstring = \
         normalization of Newton sphere, maximum in range
         Beta[0, low:high]
     return_Beta: bool
-        return the Beta array of Newton spheres, as the tuple (radial-grid, Beta)
+        return the Beta array of Newton spheres, as the tuple: radial-grid, Beta
             for the case :attr:`un=[0, 2]`
 
             Beta[0] vs radius -> speed distribution

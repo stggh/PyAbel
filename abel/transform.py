@@ -44,15 +44,23 @@ class Transform(object):
     direction: str
         transform direction, as specified by the input option.
 
-    linbasex_angular_integration: tuple
-        with :func:`transform_options=dict(return_Beta=True)`
-        (radial-grid, radial-intensity) 
-        the 'speed' distribution, evaluated directly from the Newton spheres.
-    linbasex_anisotropy_parameter: tuple
-        with :func:`transform_options=dict(return_Beta=True)`
-        (radial-grid, anisotropy-parameter)
-        evaluated directly from the Newton spheres.
+    Beta: numpy 2D array
+        with ``linbasex`` :func:`transform_options=dict(return_Beta=True)`
+        Beta array coefficients of Newton sphere spherical harmonics
         
+            Beta[0] - the radial intensity variation
+
+            Beta[1] - the anisotropy parameter variation
+
+            ...Beta[n] - higher order terms upto `un = [0, ..., n]`
+        
+    radial: numpy 1d array
+        with ``linbasex`` :func:`transform_options=dict(return_Beta=True)`
+        radial-grid for Beta array
+
+    projection: 
+        with ``linbasex`` :func:`transform_options=dict(return_Beta=True)`
+        radial projection profiles at angles `an`
     """
 
     _verbose = False
@@ -398,11 +406,9 @@ class Transform(object):
 
         self._verboseprint("{:.2f} seconds".format(time.time()-t0))
 
-        self.linbasex_angular_integration = (radial, Beta[0])
-        self.linbasex_anisotropy_parameter = (radial, Beta[1])
-        self.linbasex_projection = QLz
-        self.linbasex_Beta = Beta
-        self.linbasex_radial = radial
+        self.Beta = Beta
+        self.projection = QLz
+        self.radial = radial
             
 
     def _abel_transform_image_by_quadrant(self, **transform_options):
