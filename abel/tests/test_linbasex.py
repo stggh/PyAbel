@@ -42,7 +42,8 @@ def test_linbasex_forward_dribinski_image():
     orig_radial, orig_speed = abel.tools.vmi.angular_integration(IM)
 
 
-    radial, speed = ifIM.linbasex_angular_integration
+    radial = ifIM.radial
+    speed = ifIM.Beta[0]
 
     orig_speed /= orig_speed[1:60].max()
     speed /= speed[1:60].max()
