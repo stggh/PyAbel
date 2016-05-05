@@ -12,10 +12,23 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
                   verbose=False):
     """load basis set from disk, generate and store if not available.
 
+    Checks whether file ``{method}_basis_{cols}_{cols}*.npy`` is present in 
+    `basis_dir` 
+    (*) special case for ``linbasex``
+         _{un}_{an}_{inc}_{clip} 
+        where {un} = str of the list elements, typically '02'
+              (an} = str of the list elements, typically '04590135'
+              {inc} = pixel grid size, usually 1
+              {clip} = clipping size, usually 0
+
+    Either, read basis array or generate basis, saving it to the file.
+        
+
     Parameters
     ----------
     method : str
-        Abel transform method, currently ``two_point`` or ``onion_peeling``
+        Abel transform method, currently ``linbasex``, ``onion_peeling``,
+        ``three_point``, and ``two_point``
     cols : int
         width of image
     basis_dir : str
@@ -27,13 +40,18 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
     -------
     D: numpy 2D array of shape (cols, cols)
        basis operator array
+
+    file.npy: file
+       saves basis to file name ``{method}_basis_{cols}_{cols}*.npy``
+       * == ``__{un}_{an}_{inc}_{clip}`` for ``linbasex`` method
+
     """
 
     basis_generator = {
         "linbasex": abel.linbasex._bs_linbasex,
-        "two_point": abel.dasch._bs_two_point,
+        "onion_peeling": abel.dasch._bs_onion_peeling,
         "three_point": abel.dasch._bs_three_point,
-        "onion_peeling": abel.dasch._bs_onion_peeling
+        "two_point": abel.dasch._bs_two_point
     }
 
     if method not in basis_generator.keys():
@@ -41,10 +59,24 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
                          .format(method))
 
     basis_name = "{}_basis_{}_{}".format(method, cols, cols)
-    if method == "linbasex" and basis_options.keys():
-       basis_name += "_{}_{}_{}".format(len(basis_options['un']),
-                                        len(basis_options['an']),
-                                        basis_options['clip'])
+    # special case linbasex requires additional identifying parameters
+    # 
+    # linbasex_basis_cols_cols_02_090_0.npy
+    if method == "linbasex": 
+       # Fix Me! not a simple unique naming mechanism
+        for key in ['un', 'an', 'inc', 'clip']:
+            if key in basis_options.keys():
+                if key in ['un', 'an']:
+                    value = ''.join(map(str, basis_options[key]))
+                else: 
+                    value = basis_options[key]
+            else:
+                # missing option, use defaults
+                default = {'un':[0,2], 'an':[0,90], 'inc':1, 'clip':0}
+                value = default[key]
+
+            basis_name += "_{}".format(value)
+
     basis_name += ".npy"
 
     D = None
