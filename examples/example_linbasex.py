@@ -24,13 +24,13 @@ rows, cols = IM.shape    # image size
 # Image center should be mid-pixel and image square, 
 # `center=convolution` takes care of this
 
-un = [0, 90]  # spherical harmonic orders
+un = [0, 2]  # spherical harmonic orders
 an = range(0, 180, 45)  # projectin angles
 sig_s = 0.5  # smoothing Gaussian 1/e width
 # Hansen & Law inverse Abel transform
 LIM = abel.Transform(IM, method="linbasex", center="convolution",
                      center_options=dict(square=True),
-                     transform_options=dict(return_Beta=True,
+                     transform_options=dict(basis_dir=None, return_Beta=True,
                                             un=un, an=an, sig_s=sig_s)) 
 
 # angular_integration - direct from `linbasex` transform
@@ -45,9 +45,9 @@ beta = LIM.Beta[1]
 
 # plots of the analysis
 fig = plt.figure(figsize=(15, 4))
-ax1 = plt.subplot(131)
-ax2 = plt.subplot(132)
-ax3 = plt.subplot(133)
+ax1 = plt.subplot2grid((1, 3), (0, 0))
+ax2 = plt.subplot2grid((1, 3), (0, 1))
+ax3 = plt.subplot2grid((1, 3), (0, 2))
 
 # join 1/2 raw data : 1/2 inversion image
 inv_IM = LIM.transform
@@ -80,10 +80,6 @@ ax3.set_ylabel("$\\beta$")
 ax3.set_title("Beta[1]: anisotropy parameter")
 
 plt.suptitle("un={}, an={}, sig_s={}".format(un, an, sig_s))
-
-# Plot the angular distribution 
-plt.subplots_adjust(left=0.06, bottom=0.17, right=0.95, top=0.89, 
-                    wspace=0.37, hspace=0.37)
 
 # Save a image of the plot
 plt.savefig("example_linbasex.png", dpi=100)
