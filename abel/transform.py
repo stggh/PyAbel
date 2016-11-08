@@ -8,6 +8,8 @@ from __future__ import unicode_literals
 import numpy as np
 import time
 import warnings
+import multiprocessing
+from functools import partial
 
 from . import basex
 from . import dasch
@@ -334,6 +336,7 @@ class Transform(object):
             much more quickly.
 
         """
+        self.pool = multiprocessing.Pool()
 
         # public class variables
         self.IM = IM   # (optionally) centered, odd-width image
@@ -437,8 +440,10 @@ class Transform(object):
                          symmetrize_method=self._symmetrize_method)
 
         def selected_transform(Z):
-            return abel_transform[self.method](Z, direction=self.direction, 
-                                               **transform_options)
+            func = partial(abel_transform[self.method],direction=self.direction,
+                                                       **transform_options)
+            return np.array(self.pool.map(func, Z))
+            
 
         AQ0 = AQ1 = AQ2 = AQ3 = None
 
