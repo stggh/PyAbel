@@ -336,30 +336,36 @@ class Transform(object):
         """
 
         # public class variables
-        self.IM = IM   # (optionally) centered, odd-width image
+        self.IM = IM
         self.method = method
         self.direction = direction
 
-        # private internal variables
-        self._symmetry_axis = symmetry_axis
-        self._symmetrize_method = symmetrize_method
-        self._use_quadrants = use_quadrants
-        self._recast_as_float64 = recast_as_float64
+        self.symmetry_axis = symmetry_axis
+        self.symmetrize_method = symmetrize_method
+        self.use_quadrants = use_quadrants
+        self.recast_as_float64 = recast_as_float64
         _verbose = verbose
+
+        # load image 
+        if isinstance(IM, str):
+            self.load_image(IM)
 
         # image processing
         self._verify_some_inputs()
 
-        self._center_image(center, **center_options)
+        self.center_image(center, **center_options)
 
-        self._abel_transform_image(**transform_options)
+        self.abel_transform_image(**transform_options)
 
-        self._integration(angular_integration, transform_options, 
-                          **angular_integration_options)
+        if angular_integration:
+            self.integration(transform_options, **angular_integration_options)
 
     # end of class instance 
 
     _verboseprint = print if _verbose else lambda *a, **k: None
+
+    def load_image(self, fn):
+        self.IM = np.loadtxt(fn)
 
     def _verify_some_inputs(self):
         if self.IM.ndim == 1 or np.shape(self.IM)[0] <= 2:
@@ -367,23 +373,29 @@ class Transform(object):
                               To transform a single row \
                               use the individual transform function.')
 
-        if not np.any(self._use_quadrants):
+        if not np.any(self.use_quadrants):
             raise ValueError('No image quadrants selected to use')
 
-        if not isinstance(self._symmetry_axis, (list, tuple)):
+        if not isinstance(self.symmetry_axis, (list, tuple)):
             # if the user supplies an int, make it into a 1-element list:
-            self._symmetry_axis = [self._symmetry_axis]
+            self.symmetry_axis = [self.symmetry_axis]
 
-        if self._recast_as_float64:
+        if self.recast_as_float64:
             self.IM = self.IM.astype('float64')
 
-    def _center_image(self, center, **center_options):
-        if center != "none":
-            self.IM = tools.center.center_image(self.IM, center, 
-                                                 **center_options)
+    def center_image(self, center='com', odd_size=True, square=False,
+                     verbose=False):
+        if center is not 'none':
+            self.center = center
+            self.odd_size = odd_size
+            self.square = square
+            self.IM = tools.center.center_image(self.IM, center=center,
+                                                odd_size=odd_size,
+                                                square=square,
+                                                verbose=verbose)
 
-    def _abel_transform_image(self, **transform_options):
-        if self.method == "linbasex" and self._symmetry_axis is not None: 
+    def abel_transform_image(self, **transform_options):
+        if self.method == "linbasex" and self.symmetry_axis is not None: 
             self._abel_transform_image_full(**transform_options)
         else:
             self._abel_transform_image_by_quadrant(**transform_options)
@@ -433,8 +445,8 @@ class Transform(object):
         # split image into quadrants
         Q0, Q1, Q2, Q3 = tools.symmetry.get_image_quadrants(
                          self.IM, reorient=True,
-                         symmetry_axis=self._symmetry_axis, 
-                         symmetrize_method=self._symmetrize_method)
+                         symmetry_axis=self.symmetry_axis, 
+                         symmetrize_method=self.symmetrize_method)
 
         def selected_transform(Z):
             return abel_transform[self.method](Z, direction=self.direction, 
@@ -445,13 +457,13 @@ class Transform(object):
         # Inverse Abel transform for quadrant 1 (all include Q1)
         AQ1 = selected_transform(Q1)
 
-        if 0 in self._symmetry_axis:
+        if 0 in self.symmetry_axis:
             AQ2 = selected_transform(Q2)
 
-        if 1 in self._symmetry_axis:
+        if 1 in self.symmetry_axis:
             AQ0 = selected_transform(Q0)
 
-        if None in self._symmetry_axis:
+        if None in self.symmetry_axis:
             AQ0 = selected_transform(Q0)
             AQ2 = selected_transform(Q2)
             AQ3 = selected_transform(Q3)
@@ -480,18 +492,16 @@ class Transform(object):
         self.transform = tools.symmetry.put_image_quadrants(
                                 (AQ0, AQ1, AQ2, AQ3), 
                                 original_image_shape=self.IM.shape,
-                                symmetry_axis=self._symmetry_axis)
+                                symmetry_axis=self.symmetry_axis)
 
         self._verboseprint("{:.2f} seconds".format(time.time()-t0))
 
-    def _integration(self, angular_integration, transform_options,
-                     **angular_integration_options):
-        if angular_integration:
-            if 'dr' in transform_options and\
-               'dr' not in angular_integration_options:
-                # assume user forgot to pass grid size
-                angular_integration_options['dr'] = transform_options['dr']
+    def integration(self, transform_options, **angular_integration_options):
+        if 'dr' in transform_options and\
+           'dr' not in angular_integration_options:
+            # assume user forgot to pass grid size
+            angular_integration_options['dr'] = transform_options['dr']
 
-            self.angular_integration = tools.vmi.angular_integration(
-                                             self.transform,
-                                             **angular_integration_options)
+        self.angular_integration = tools.vmi.angular_integration(
+                                         self.transform,
+                                         **angular_integration_options)

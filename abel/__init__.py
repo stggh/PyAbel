@@ -16,4 +16,5 @@ from . import tools
 from . import transform
 from . import tests
 from .transform import Transform
+from .image import Image
 from .tools.center import center_image
