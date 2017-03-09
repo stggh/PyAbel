@@ -19,7 +19,7 @@ from scipy import dot
 #
 # 2016-03-25 Dan Hickstein - one line Abel transform
 # 2016-03-24 Steve Gibson - Python code framework
-# 2015-12-29 Dhrubajyoti Das - original three_point code and 
+# 2015-12-29 Dhrubajyoti Das - original three_point code and
 #                              highlighting the Dasch paper,see issue #61
 #                              https://github.com/PyAbel/PyAbel/issues/61
 #
@@ -51,7 +51,7 @@ _dasch_parameter_docstring = \
     Returns
     -------
     inv_IM: 1D or 2D numpy array
-        the "dasch_method" inverse Abel transformed half-image 
+        the "dasch_method" inverse Abel transformed half-image
 
     """
 
@@ -78,7 +78,7 @@ onion_peeling_transform.__doc__ =\
             _dasch_parameter_docstring.replace("dasch_method", "onion-peeling")
 
 
-def _dasch_transform(IM, basis_dir='.', dr=1, direction="inverse", 
+def _dasch_transform(IM, basis_dir='.', dr=1, direction="inverse",
                      method="three_point"):
 
     if direction != 'inverse':
@@ -94,7 +94,7 @@ def _dasch_transform(IM, basis_dir='.', dr=1, direction="inverse",
 
     if cols < 3 and method == "three_point":
         raise ValueError('"three_point" requires image width (cols) > 3')
-    
+
     D = abel.tools.basis.get_bs_cached(method, cols, basis_dir=basis_dir)
 
     inv_IM = dasch_transform(IM, D)
@@ -112,13 +112,13 @@ def dasch_transform(IM, D):
     ----------
     IM : 2D numpy array
         image data
-    D : 2D numpy array 
-        D-operator basis shape (cols, cols) 
+    D : 2D numpy array
+        D-operator basis shape (cols, cols)
 
     Returns
     -------
     inv_IM : 2D numpy array
-        inverse Abel transform according to basis operator D 
+        inverse Abel transform according to basis operator D
     """
     # one-line Abel transform - dot product of each row of IM with D
     return np.tensordot(IM, D, axes=(1, 1))
@@ -126,7 +126,7 @@ def dasch_transform(IM, D):
 
 def _bs_two_point(cols):
     """basis function for two_point.
-    
+
     Parameters
     ----------
     cols : int
@@ -134,15 +134,15 @@ def _bs_two_point(cols):
     """
 
     # basis function Eq. (9)  for j >= i
-    def J(i, j): 
-        return np.log((np.sqrt((j+1)**2 - i**2) + j + 1)/
+    def J(i, j):
+        return np.log((np.sqrt((j + 1)**2 - i**2) + j + 1) /
                       (np.sqrt(j**2 - i**2) + j))/np.pi
 
     # Eq. (8, 9) D-operator basis, is 0 for j < i
     D = np.zeros((cols, cols))
 
     # diagonal i == j
-    Ii, Jj = np.diag_indices(cols) 
+    Ii, Jj = np.diag_indices(cols)
     Ii = Ii[1:]  # exclude special case i=j=0
     Jj = Jj[1:]
     D[Ii, Jj] = J(Ii, Jj)
@@ -162,7 +162,7 @@ def _bs_two_point(cols):
 
 def _bs_three_point(cols):
     """basis function for three_point.
-    
+
     Parameters
     ----------
     cols : int
@@ -171,12 +171,13 @@ def _bs_three_point(cols):
 
     # basis function Eq. (7)  for j >= i
     def I0diag(i, j):
-        return np.log((np.sqrt((2*j+1)**2-4*i**2) + 2*j+1)/(2*j))/(2*np.pi)
+        return np.log((np.sqrt((2*j + 1)**2 - 4*i**2) + 2*j+1) / (2*j)) /\
+                      (2*np.pi)
 
     # j > i
     def I0(i, j):
-        return np.log(((np.sqrt((2*j + 1)**2 - 4*i**2) + 2*j + 1))/ 
-                       (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1))/(2*np.pi) 
+        return np.log(((np.sqrt((2*j + 1)**2 - 4*i**2) + 2*j + 1)) /
+                       (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1)) / (2*np.pi)
 
     # i = j  NB minus -2I_ij typo in Dasch paper
     def I1diag(i, j):
@@ -184,7 +185,7 @@ def _bs_three_point(cols):
 
     # j > i
     def I1(i, j):
-        return (np.sqrt((2*j+1)**2 - 4*i**2) -\
+        return (np.sqrt((2*j+1)**2 - 4*i**2) -
                 np.sqrt((2*j-1)**2 - 4*i**2))/(2*np.pi) - 2*j*I0(i, j)
 
     D = np.zeros((cols, cols))
@@ -201,12 +202,12 @@ def _bs_three_point(cols):
     # j = i + 1
     Iu, Ju = I-1, J
     Iu = Iu[1:]  # drop special case (0, 1)
-    Ju = Ju[1:] 
+    Ju = Ju[1:]
 
     # j > i + 1
     Iut, Jut = np.triu_indices(cols, k=2)
     Iut = Iut[1:]  # drop special case (0, 2)
-    Jut = Jut[1:] 
+    Jut = Jut[1:]
 
     # D operator matrix ------------------
     # j = i - 1
@@ -224,7 +225,7 @@ def _bs_three_point(cols):
                   I0(Iut, Jut-1) - I1(Iut, Jut-1)
 
     # special cases (that switch between I0, I1 cases)
-    D[0, 2] = I0(0, 3) - I1(0, 3) + 2*I1(0, 2) - I0(0, 1) - I1(0, 1) 
+    D[0, 2] = I0(0, 3) - I1(0, 3) + 2*I1(0, 2) - I0(0, 1) - I1(0, 1)
     D[0, 1] = I0(0, 2) - I1(0, 2) + 2*I1(0, 1) - 1/np.pi
     D[0, 0] = I0(0, 1) - I1(0, 1) + 1/np.pi
 
@@ -233,24 +234,24 @@ def _bs_three_point(cols):
 
 def _bs_onion_peeling(cols):
     """basis function for onion_peeling.
-    
+
     Parameters
     ----------
     cols : int
         width of the image
     """
 
-    # basis weight matrix 
+    # basis weight matrix
     W = np.zeros((cols, cols))
 
     # diagonal elements i = j, Eq. (11)
-    I, J = np.diag_indices(cols) 
+    I, J = np.diag_indices(cols)
     W[I, J] = np.sqrt((2*J+1)**2 - 4*I**2)
 
     # upper triangle j > i,  Eq. (11)
-    Iu, Ju = np.triu_indices(cols, k=1) 
+    Iu, Ju = np.triu_indices(cols, k=1)
     W[Iu, Ju] = np.sqrt((2*Ju + 1)**2 - 4*Iu**2) -\
-                np.sqrt((2*Ju - 1)**2 - 4*Iu**2) 
+                np.sqrt((2*Ju - 1)**2 - 4*Iu**2)
 
     # operator used in Eq. (1)
     D = inv(W)   
