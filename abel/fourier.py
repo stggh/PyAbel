@@ -7,9 +7,10 @@ from __future__ import unicode_literals
 import numpy as np
 import abel
 from scipy.optimize import least_squares
-from scipy.integrate import simps
+from scipy.integrate import simps, fixed_quad
 
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 #############################################################################
 #
@@ -17,49 +18,63 @@ import matplotlib.pyplot as plt
 # G. Pretzler "A new method for numerical Abel-inverson"
 #  Z. Naturforsch 46a, 639-641 (1991) 
 #
-# 2017-04-01 Stephen Gibson - python coding of algorithm
+# 2017-04 Stephen Gibson - python coded algorithm
 #
 #############################################################################
-
 
 def fourier_transform(fQ0, basis_dir='.', direction='inverse'):
    rows, cols = fQ0.shape
 
-   n = np.arange(5)
-   An = np.ones_like(n)
+   N = np.arange(3)
+   An = np.ones_like(N)
 
-   r = np.arange(cols)
+   R = cols-1
+
+   Fbasis = _bs_fourier(cols, N)
 
    AfQ0 = np.zeros_like(fQ0)
-   for y, fQ0row in enumerate(fQ0[1::-1]):
-        subr = r > y
-        res = least_squares(residual, An, args=(fQ0row[subr], n, r[subr], y))
-        AfQ0[y, subr] = np.dot(res.x, f(n, r[subr]))
 
-   return np.array(AfQ0[::-1])
+   for z, fQ0row in enumerate(fQ0[::-1]):
+        res = least_squares(residual, An, args=(fQ0row, N, R))
+        An = res.x
+        AfQ0[z] = np.dot(An, Fbasis)
+
+   return AfQ0[::-1]
            
 
-def f(n, r):
-    # Fourier series
-    f = np.zeros((len(n), len(r)))
+def f(r, R, n):
+    fr = 1 - (-1)**n * np.cos(n*np.pi*r/R)
 
-    for nn in n:
-       f[nn] =  1 - (-1)**nn * np.cos(nn*np.pi*r/r[-1])
-
-    # special case n=0
-    if n[0] == 0:
-        f[0] = 1
- 
-    return f
-
-
-def h(n, r, y):
-    # integration of fn(r)   r = y -> R
-    return simps(f(n, r)*r/np.sqrt(r**2 - y**2), r)
+    # special case n == 0
+    if hasattr(n, "__len__"):
+        if n[0] == 0:
+            fr[0] = 1
+    else:
+        if n == 0:
+            fr = 1
+    return fr
 
 
-def residual(par, Q0row, n, r, y):
-    return Q0row - 2*np.dot(par, h(n, r, y))
+def h(par, N, x, R):
+    # integration of fn(r) r/sqrt(r^2 - x^2) for  r = x -> R, for each n
+    Fint = np.array([fixed_quad(f, x, R, args=(R, n))[0] for n in N])
+    return 2*np.dot(par, Fint)
+
+
+def residual(par, img_row, N, R):
+    res = img_row.copy()
+    for x in range(img_row.shape[0]-2):
+        res[x] -= h(par, N, x, R)
+        
+    return res
+
+def _bs_fourier(cols, N):
+
+    basis = np.zeros((len(N), cols))
+    for n in N: 
+        basis[n] = f(np.arange(cols), cols-1, n)
+
+    return basis 
 
 
 if __name__ == "__main__":
@@ -84,13 +99,19 @@ if __name__ == "__main__":
     realradial, realspeed = abel.tools.vmi.angular_integration(Q0, origin=(0, 0))
 
     # graphics
-    fig, (ax0, ax1, ax2, ax3) = plt.subplots(1, 4)
-    ax0.imshow(Q0)
-    ax0.axis('off')
-    ax1.imshow(fQ0)
+    fig = plt.figure()
+    gs = gridspec.GridSpec(2, 3)
+    ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=3)
+    ax1 = plt.subplot2grid((2, 3), (1, 0))
+    ax2 = plt.subplot2grid((2, 3), (1, 1))
+    ax3 = plt.subplot2grid((2, 3), (1, 2))
+    ax1.imshow(Q0)
     ax1.axis('off')
-    ax2.imshow(AQ0, vmin=0)
+    ax2.imshow(fQ0)
     ax2.axis('off')
-    ax3.plot(radial, speed/speed.max())
-    ax3.plot(realradial, realspeed/realspeed.max(), zorder=0)
+    ax3.imshow(AQ0, vmin=0)
+    ax3.axis('off')
+    ax0.plot(radial, speed/speed.max(), label='Fourier')
+    ax0.plot(realradial, realspeed/realspeed.max(), zorder=0, label='real')
+    ax0.legend()
     plt.show()
