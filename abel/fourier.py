@@ -166,4 +166,5 @@ if __name__ == "__main__":
     ax0.plot(orgradial, orgspeed/orgspeed.max(), zorder=0, label='original',
              lw=3)
     ax0.legend()
+    plt.savefig("plot_example_fourier.png", dpi=75)
     plt.show()
