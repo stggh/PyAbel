@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import numpy as np
 import abel
 from scipy.optimize import least_squares
-from scipy.integrate import simps, fixed_quad
+from scipy.integrate import quadrature
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -22,13 +22,17 @@ import matplotlib.gridspec as gridspec
 #
 #############################################################################
 
-def fourier_transform(IM, Nl=0, Nu=None, basis_dir='.', direction='inverse'):
+def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
    r""" Fourier cosine series inverse Abel transform using the algorithm of
         `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
         <https://doi.org/10.1515/zna-1991-0715>`_
 
-   Paramters
-   ---------
+   Basis function  math:`f(r) = A_n (1-(-1)^n \cos(n \pi r/R)`
+   Transform math:`h(y) = \int_R^\infty \frac{f(r) r}{\sqrt{r^2 - y^2)}dr`
+   
+
+   Parameters
+   ----------
    IM : 1D or 2D numpy array
        right-side half-image (or quadrant)
    
@@ -47,60 +51,65 @@ def fourier_transform(IM, Nl=0, Nu=None, basis_dir='.', direction='inverse'):
         
    rows, cols = IM.shape
 
-   # coefficients An (1 - (-1)^n cos(n pi r/R))
-   if Nu == None:
-       Nu = cols//2
+   # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
    N = np.arange(Nl, Nu)
    An = np.ones_like(N)
 
-   Fbasis = _bs_fourier(N, cols)
+   # precalculate bases
+   fbasis, hbasis = _bs_fourier(N, rows, cols)
 
+   # inverse Abel transform 
    AIM = np.zeros_like(IM)
 
-   for z, IMrow in enumerate(IM):
-        res = least_squares(residual, An, args=(IMrow, N, cols-1))
+   # fit basis to image, one row at a time
+   for rownum, IMrow in enumerate(IM):
+        res = least_squares(residual, An, args=(IMrow, rownum, hbasis))
         An = res.x  # use as initial value for next row fit
-        AIM[z] = np.dot(An, Fbasis)
+        AIM[rownum] = np.dot(An, fbasis)
 
    return AIM
            
+def residual(par, IMrow, rownum, Hbasis):
+    return IMrow - 2*np.dot(par, Hbasis[:, rownum])
 
 def f(r, R, n):
     return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
 
-def fh(r, R, n, x):
+def fh(r, x, R, n):
     return f(r, R, n)*r/np.sqrt(r**2 - x**2)
 
-def h(par, R, N, x):
-    # integration of fn(r) r/sqrt(r^2 - x^2) for  r = x -> R, for each n
-    hint = np.array([fixed_quad(fh, x, R, args=(R, n, x))[0] for n in N])
-    return 2*np.dot(par, hint)
+def h(x, R, n):
+    # Gaussian integration better for 1/sqrt(r^2 - x^2)
+    return quadrature(fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
+                      maxiter=500)[0]
+
+def _bs_fourier(N, rows, cols):
+    fbasis = np.zeros((len(N), cols))
+    hbasis = np.zeros((len(N), rows, cols))
+
+    r = np.arange(cols)
+    R = r[-1]   # maximum radial integration range
+
+    for i, n in enumerate(N): 
+        fbasis[i] = f(r, R, n)
+        # hbasis[N, row, col]
+        for j in r:
+           hbasis[i, :, j] = h(j, R, n)
+
+    return fbasis, hbasis 
 
 
-def residual(par, img_row, N, R):
-    res = img_row.copy()
-    for x in range(img_row.shape[0]-2):
-        res[x] -= h(par, R, N, x)
-        
-    return res
-
-def _bs_fourier(N, cols):
-
-    basis = np.zeros((len(N), cols))
-    for n in N: 
-        basis[n-N[0]] = f(np.arange(cols), cols-1, n)
-
-    return basis 
-
-
+# main -----------------------------------
 if __name__ == "__main__":
 
-    IM = abel.tools.analytical.sample_image(301, name='Ominus')
-    # x = np.linspace(-50, 50, 101)
-    # y = np.linspace(-50, 50, 101)
-    # XX, YY = np.meshgrid(x, y)
+    # IM = abel.tools.analytical.sample_image(301, name='dribinski')
+    m = 301
+    m2 = m//2
+    x = np.linspace(-m2, m2, m)
+    y = np.linspace(-m2, m2, m)
+    XX, YY = np.meshgrid(x, y)
     # 2D Gaussian intensity function at image centre
-    # IM = np.exp(-(XX**2 + YY**2)/50)
+    IM = np.exp(-(XX**2 + YY**2)/m2/10)
 
     Q = abel.tools.symmetry.get_image_quadrants(IM)
     Q0 = Q[0]  # top right side quadrant
@@ -110,7 +119,7 @@ if __name__ == "__main__":
     fQ0 = abel.hansenlaw.hansenlaw_transform(Q0, direction='forward')
 
     # inverse Abel
-    AQ0 = fourier_transform(fQ0, Nl=0, Nu=51)
+    AQ0 = fourier_transform(fQ0, Nl=0, Nu=31)
 
     radial, speed = abel.tools.vmi.angular_integration(AQ0, origin=(0, 0))
     realradial, realspeed = abel.tools.vmi.angular_integration(Q0,
