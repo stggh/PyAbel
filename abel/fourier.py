@@ -14,74 +14,95 @@ import matplotlib.gridspec as gridspec
 
 #############################################################################
 #
-# Fourier cosine series method 
+# Fourier cosine series method
 # G. Pretzler "A new method for numerical Abel-inverson"
-#  Z. Naturforsch 46a, 639-641 (1991) 
+#  Z. Naturforsch 46a, 639-641 (1991)
 #
 # 2017-04 Stephen Gibson - python coded algorithm
 #
 #############################################################################
 
+
 def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
-   r""" Fourier cosine series inverse Abel transform using the algorithm of
-        `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
-        <https://doi.org/10.1515/zna-1991-0715>`_
+    r""" Fourier cosine series inverse Abel transform using the algorithm of
+         `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
+         <https://doi.org/10.1515/zna-1991-0715>`_
 
-   Basis function  math:`f(r) = A_n (1-(-1)^n \cos(n \pi r/R)`
-   Transform math:`h(y) = \int_R^\infty \frac{f(r) r}{\sqrt{r^2 - y^2)}dr`
-   
 
-   Parameters
-   ----------
-   IM : 1D or 2D numpy array
-       right-side half-image (or quadrant)
-   
-   Nl : int
-       lowest coefficient of Fourier cosine series
+    Fits each image row to
 
-   Nu : int
-       uppermost ceofficient of Fourier cosine series
+    .. math::
 
-   Returns
-   -------
-   AIM : 1D or 2D numpy array
-       inverse Abel transform half-image, the same shape as IM
+      H(y) = 2 \sum_{n=N_l}^{N_u} A_n \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr
 
-   """
-        
-   rows, cols = IM.shape
+    to determine coefficients :math:`A_n`.
 
-   # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
-   N = np.arange(Nl, Nu)
-   An = np.ones_like(N)
+    The inverse Abel transform image is given by:
 
-   # precalculate bases
-   fbasis, hbasis = _bs_fourier(N, rows, cols)
+    .. math::
 
-   # inverse Abel transform 
-   AIM = np.zeros_like(IM)
+      f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)
 
-   # fit basis to image, one row at a time
-   for rownum, IMrow in enumerate(IM):
+    where the basis function  :math:`f(r) = A_n (1-(-1)^n \cos(n \pi r/R)`
+
+
+    Parameters
+    ----------
+    IM : 1D or 2D numpy array
+        Right-side half-image (or quadrant).
+
+    Nl : int
+        Lowest coefficient of Fourier cosine series.
+
+    Nu : int
+        Uppermost ceofficient of Fourier cosine series.
+
+    Returns
+    -------
+    AIM : 1D or 2D numpy array
+        Inverse Abel transform half-image, the same shape as IM
+
+    """
+
+    IM = np.atleast_2d(IM)
+    rows, cols = IM.shape   # shape of input quadrant (or half image)
+
+    # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
+    N = np.arange(Nl, Nu)
+    An = np.ones_like(N)
+
+    # precalculate bases
+    fbasis, hbasis = _bs_fourier(N, rows, cols)
+
+    # inverse Abel transform
+    AIM = np.zeros_like(IM)
+
+    # fit basis to image, one row at a time
+    for rownum, IMrow in enumerate(IM):
         res = least_squares(residual, An, args=(IMrow, rownum, hbasis))
         An = res.x  # use as initial value for next row fit
         AIM[rownum] = np.dot(An, fbasis)
 
-   return AIM
-           
+    return AIM
+
+
 def residual(par, IMrow, rownum, Hbasis):
     return IMrow - 2*np.dot(par, Hbasis[:, rownum])
+
 
 def f(r, R, n):
     return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
 
+
 def fh(r, x, R, n):
     return f(r, R, n)*r/np.sqrt(r**2 - x**2)
+
 
 def h(x, R, n):
     # Gaussian integration better for 1/sqrt(r^2 - x^2)
     return quadrature(fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
                       maxiter=500)[0]
+
 
 def _bs_fourier(N, rows, cols):
     fbasis = np.zeros((len(N), cols))
@@ -90,13 +111,13 @@ def _bs_fourier(N, rows, cols):
     r = np.arange(cols)
     R = r[-1]   # maximum radial integration range
 
-    for i, n in enumerate(N): 
+    for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
         # hbasis[N, row, col]
         for j in r:
-           hbasis[i, :, j] = h(j, R, n)
+            hbasis[i, :, j] = h(j, R, n)
 
-    return fbasis, hbasis 
+    return fbasis, hbasis
 
 
 # main -----------------------------------
@@ -113,7 +134,6 @@ if __name__ == "__main__":
 
     Q = abel.tools.symmetry.get_image_quadrants(IM)
     Q0 = Q[0]  # top right side quadrant
-  
 
     # forward Abel transform
     fQ0 = abel.hansenlaw.hansenlaw_transform(Q0, direction='forward')
@@ -122,10 +142,10 @@ if __name__ == "__main__":
     AQ0 = fourier_transform(fQ0, Nl=0, Nu=31)
 
     radial, speed = abel.tools.vmi.angular_integration(AQ0, origin=(0, 0))
-    realradial, realspeed = abel.tools.vmi.angular_integration(Q0,
-                                                               origin=(0, 0))
+    orgradial, orgspeed = abel.tools.vmi.angular_integration(Q0,
+                                                             origin=(0, 0))
 
-    # graphics ---------------------
+    # plots ---------------------
     fig = plt.figure()
     gs = gridspec.GridSpec(2, 3)
     ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=3)
@@ -134,11 +154,16 @@ if __name__ == "__main__":
     ax3 = plt.subplot2grid((2, 3), (1, 2))
     ax1.imshow(Q0)
     ax1.axis('off')
+    ax1.set_title('original')
     ax2.imshow(fQ0)
     ax2.axis('off')
+    ax2.set_title('forward Abel')
     ax3.imshow(AQ0, vmin=0)
     ax3.axis('off')
+    ax3.set_title('fourier inverse Abel')
+
     ax0.plot(radial, speed/speed.max(), label='Fourier')
-    ax0.plot(realradial, realspeed/realspeed.max(), zorder=0, label='real')
+    ax0.plot(orgradial, orgspeed/orgspeed.max(), zorder=0, label='original',
+             lw=3)
     ax0.legend()
     plt.show()
