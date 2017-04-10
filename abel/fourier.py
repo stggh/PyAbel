@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import numpy as np
 import abel
 from scipy.optimize import least_squares
-from scipy.integrate import simps, fixed_quad
+from scipy.integrate import quadrature
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -27,8 +27,12 @@ def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
         `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
         <https://doi.org/10.1515/zna-1991-0715>`_
 
-   Paramters
-   ---------
+   Basis function  math:`f(r) = A_n (1-(-1)^n \cos(n \pi r/R)`
+   Transform math:`h(y) = \int_R^\infty \frac{f(r) r}{\sqrt{r^2 - y^2)}dr`
+   
+
+   Parameters
+   ----------
    IM : 1D or 2D numpy array
        right-side half-image (or quadrant)
    
@@ -47,18 +51,21 @@ def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
         
    rows, cols = IM.shape
 
-   # coefficients An (1 - (-1)^n cos(n pi r/R))
+   # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
    N = np.arange(Nl, Nu)
    An = np.ones_like(N)
 
-   Fbasis, Hbasis = _bs_fourier(N, rows, cols)
+   # precalculate bases
+   fbasis, hbasis = _bs_fourier(N, rows, cols)
 
+   # inverse Abel transform 
    AIM = np.zeros_like(IM)
 
+   # fit basis to image, one row at a time
    for rownum, IMrow in enumerate(IM):
-        res = least_squares(residual, An, args=(IMrow, rownum, Hbasis))
+        res = least_squares(residual, An, args=(IMrow, rownum, hbasis))
         An = res.x  # use as initial value for next row fit
-        AIM[rownum] = np.dot(An, Fbasis)
+        AIM[rownum] = np.dot(An, fbasis)
 
    return AIM
            
@@ -72,16 +79,20 @@ def fh(r, x, R, n):
     return f(r, R, n)*r/np.sqrt(r**2 - x**2)
 
 def h(x, R, n):
-    return fixed_quad(fh, x+1.0e-9, R, args=(x, R, n))[0]
+    # Gaussian integration better for 1/sqrt(r^2 - x^2)
+    return quadrature(fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
+                      maxiter=500)[0]
 
 def _bs_fourier(N, rows, cols):
     fbasis = np.zeros((len(N), cols))
     hbasis = np.zeros((len(N), rows, cols))
+
     r = np.arange(cols)
-    R = r[-1]
+    R = r[-1]   # maximum radial integration range
 
     for i, n in enumerate(N): 
         fbasis[i] = f(r, R, n)
+        # hbasis[N, row, col]
         for j in r:
            hbasis[i, :, j] = h(j, R, n)
 
