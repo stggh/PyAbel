@@ -68,43 +68,66 @@ def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
     rows, cols = IM.shape   # shape of input quadrant (or half image)
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
+    # many coefficients An may provide a better fit, but creates more computation
     N = np.arange(Nl, Nu)
     An = np.ones_like(N)
 
-    # precalculate bases
+    # pre-calculate bases
     fbasis, hbasis = _bs_fourier(N, rows, cols)
 
-    # inverse Abel transform
+    # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
 
-    # fit basis to image, one row at a time
     for rownum, IMrow in enumerate(IM):
+        # fit basis to an image row
         res = least_squares(residual, An, args=(IMrow, rownum, hbasis))
-        An = res.x  # use as initial value for next row fit
+
+        An = res.x  # store as initial guess for next row fit
+
+        # inverse Abel transform is the source basis function
+        # f(r) = \sum_n  An fn(r)
+        # evaluated with the row-fitted coefficients An
         AIM[rownum] = np.dot(An, fbasis)
 
     return AIM
 
 
-def residual(par, IMrow, rownum, Hbasis):
-    return IMrow - 2*np.dot(par, Hbasis[:, rownum])
+def residual(An, IMrow, rownum, Hbasis):
+    # least-squares adjust coefficients An
+    # difference between image row and the basis function
+    return IMrow - 2*np.dot(An, Hbasis[:, rownum])
 
 
 def f(r, R, n):
+    """basis function = Fourier cosine series Eq(4).
+
+    """
     return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
 
 
 def fh(r, x, R, n):
+    """Abel transform integrand of f(r), Eq(6).
+
+    """
     return f(r, R, n)*r/np.sqrt(r**2 - x**2)
 
 
 def h(x, R, n):
+    """Abel transform of basis function f(r), h(y) in Eq(6).
+
+    """
     # Gaussian integration better for 1/sqrt(r^2 - x^2)
     return quadrature(fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
                       maxiter=500)[0]
 
 
 def _bs_fourier(N, rows, cols):
+    """Basis calculations.
+
+    f(r) = Fourier cosine series = original distribution
+    h(y) = forward Abel transform of f(r)
+    """
+
     fbasis = np.zeros((len(N), cols))
     hbasis = np.zeros((len(N), rows, cols))
 
@@ -120,7 +143,7 @@ def _bs_fourier(N, rows, cols):
     return fbasis, hbasis
 
 
-# main -----------------------------------
+# testing -----------------------------------
 if __name__ == "__main__":
 
     # IM = abel.tools.analytical.sample_image(301, name='dribinski')
