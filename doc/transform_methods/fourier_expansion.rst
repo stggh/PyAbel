@@ -11,6 +11,7 @@ From the abstract:
 
 *The unknown radial distribution is expanded in a series of cosine-functions. the amplitudes of which are calculated by least-squares-fitting of the Abel-transformed series to the measured data.*
 
+Note this is one of the slowest inverse Abel transform methods, but it has the advantage of tailoring a basis function to the particular image particle distribution.
 
 How it works
 ------------
