@@ -48,6 +48,7 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
     """
 
     basis_generator = {
+        "fourier_expansion": abel.fourier_expansion._bs_fourier_expansion,
         "linbasex": abel.linbasex._bs_linbasex,
         "onion_peeling": abel.dasch._bs_onion_peeling,
         "three_point": abel.dasch._bs_three_point,

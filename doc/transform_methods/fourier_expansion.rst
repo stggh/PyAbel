@@ -16,21 +16,21 @@ Note this is one of the slowest inverse Abel transform methods, but it has the a
 How it works
 ------------
 
-Fits each image row to
+Each image row is fitted to the function
 
-    .. math::
+.. math::
 
-      H(y) = 2 \sum_{n=N_l}^{N_u} A_n \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr
+      H(y) = 2 \sum_{n=N_l}^{N_u} A_n \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2}} dr
 
-    to determine coefficients :math:`A_n`.
+to determine coefficients :math:`A_n`.
 
-    The inverse Abel transform image is given by:
+The inverse Abel transform image is then given by
 
-    .. math::
+.. math::
 
       f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)
 
-    where the basis function  :math:`f(r) = A_n (1-(-1)^n \cos(n \pi r/R)`
+where the basis function  :math:`f(r) = A_n [1-(-1)^n \cos(n \pi r/R)]` may be adapted to the nature of the image particle distribution.
 
 
 When to use it
@@ -48,7 +48,7 @@ Ref. [1] Conclusions:
 
 *The new method is non-iterative, derivative-free, and adaptable to any special problem of this kind.*
 
-This method is works better with low noise data.
+This method is works best with low noise data.
 
 How to use it
 -------------
@@ -73,7 +73,7 @@ Example
 Notes
 -----
 
-The basis coefficients :math:`A_n` are determined by a least-squares fit to each row. Reducing the number of coefficients, smaller `Nl`, will improve execution speed. 
+The basis coefficients :math:`A_n` are determined by a least-squares fit to each row. Reducing the number of coefficients, using a smaller `Nl`, will improve execution speed. 
 
 
 
