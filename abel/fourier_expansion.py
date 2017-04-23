@@ -73,7 +73,7 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir='.',
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
     # many coefficients An may provide a better fit, but creates more computation
     if Nu is None:
-        Nu = cols//3
+        Nu = cols//4
 
     N = np.arange(Nl, Nu)
     An = np.ones_like(N)
