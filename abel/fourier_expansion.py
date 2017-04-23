@@ -11,17 +11,17 @@ from scipy.integrate import quadrature
 
 #############################################################################
 #
-# Fourier cosine series method
-# G. Pretzler "A new method for numerical Abel-inverson"
-#  Z. Naturforsch 46a, 639-641 (1991)
+# Fourier cosine series method of
+#      G. Pretzler "A new method for numerical Abel-inverson"
+#                   Z. Naturforsch 46a, 639-641 (1991)
 #
 # 2017-04 Stephen Gibson - python coded algorithm
-#         Dan Hickstein - code improvement
+#         Dan Hickstein - code improvements
 #
 #############################################################################
 
 
-def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir='.',
+def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
                                 direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
@@ -44,8 +44,6 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir='.',
 
     The source distribution is then given by:
     :math:`f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)`
-
-    
 
 
     Parameters
@@ -79,7 +77,10 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir='.',
     An = np.ones_like(N)
 
     # pre-calculate bases
-    fbasis, hbasis = _bs_fourier(N, rows, cols)
+    #fbasis, hbasis = _bs_fourier_expansion(cols, N)
+    (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion", cols,
+                                  basis_dir=basis_dir,
+                                  basis_options=dict(N=N, rows=rows))
 
     # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
@@ -127,7 +128,7 @@ def h(x, R, n):
                       maxiter=500)[0]
 
 
-def _bs_fourier(N, rows, cols):
+def _bs_fourier_expansion(cols, N, rows=None):
     """Basis calculations.
 
     f(r) = Fourier cosine series = original distribution
@@ -135,6 +136,8 @@ def _bs_fourier(N, rows, cols):
     """
 
     fbasis = np.zeros((len(N), cols))
+    if rows is None:
+        rows = cols
     hbasis = np.zeros((len(N), rows, cols))
 
     r = np.arange(cols)
@@ -146,4 +149,4 @@ def _bs_fourier(N, rows, cols):
         for j in r:
             hbasis[i, :, j] = h(j, R, n)
 
-    return fbasis, hbasis
+    return (fbasis, hbasis)
