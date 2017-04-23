@@ -1,5 +1,5 @@
-Fourier series
-==============
+Fourier expansion
+=================
 
 
 Introduction
@@ -65,8 +65,8 @@ If you would like to access the `fourier_expansion` algorithm directly (to trans
 Example
 -------
 
-.. plot:: ../examples/example_fourier_expansion.py
-    :include-source:
+#.. plot:: ../examples/example_fourier_expansion.py
+#    :include-source:
 
 
 
