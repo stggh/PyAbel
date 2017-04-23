@@ -18,6 +18,14 @@ abel.basex module
     :undoc-members:
     :show-inheritance:
 
+abel.fourier_expansion module
+-----------------------------
+
+.. automodule:: abel.fourier_expansion
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 abel.linbasex module
 --------------------
 

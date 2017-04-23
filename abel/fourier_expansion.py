@@ -9,9 +9,6 @@ import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
 
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-
 #############################################################################
 #
 # Fourier cosine series method
@@ -24,27 +21,31 @@ import matplotlib.gridspec as gridspec
 #############################################################################
 
 
-def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
+def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir='.',
+                                direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
          <https://doi.org/10.1515/zna-1991-0715>`_
 
-
-    Fits each image row to
-
-    .. math::
-
-      H(y) = 2 \sum_{n=N_l}^{N_u} A_n \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr
-
-    to determine coefficients :math:`A_n`.
-
-    The inverse Abel transform image is given by:
+    Least-squares fits 
 
     .. math::
 
-      f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)
+       H(y) = 2\sum_{n=N_l}^{N_u} A_n h_n(y)
 
-    where the basis function  :math:`f(r) = A_n (1-(-1)^n \cos(n \pi r/R)`
+    to the image data 'IM', determing expansion coeffients :math:`A_n`, 
+    where 
+
+    .. math::
+
+      h_n(y) = \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr 
+
+    is the standard inverse Abel transform.
+
+    The source distribution is then given by:
+    :math:`f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)`
+
+    
 
 
     Parameters
@@ -71,6 +72,9 @@ def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
     # many coefficients An may provide a better fit, but creates more computation
+    if Nu is None:
+        Nu = cols//3
+
     N = np.arange(Nl, Nu)
     An = np.ones_like(N)
 
@@ -91,8 +95,7 @@ def fourier_transform(IM, Nl=0, Nu=21, basis_dir='.', direction='inverse'):
         # evaluated with the row-fitted coefficients An
         AIM[rownum] = np.dot(An, fbasis)
 
-    # tmp return coefficients An (for last processed row)
-    return AIM, An
+    return AIM
 
 
 def residual(An, imrow, rownum, Hbasis):

@@ -12,6 +12,7 @@ import warnings
 from . import basex
 from . import dasch
 from . import direct
+from . import fourier_expansion
 from . import hansenlaw
 from . import linbasex
 from . import onion_bordas
@@ -120,6 +121,10 @@ class Transform(object):
             ``linbasex``
                         the 1d-projections of VM-images in terms of 1d
                         spherical functions by Gerber et al. (2013).
+
+            ``fourier_expansion``
+                        the cosine-functions expansion method of 
+                        Pretzler (1991).
 
         center : tuple or str
             If a tuple (float, float) is provided, this specifies
@@ -325,6 +330,10 @@ class Transform(object):
 
             Dasch, 1992 (Applied Optics, Vol 31, No 8, March 1992, Pg 1146-1152).
 
+         ``fourier_expansion`` *
+            The cosine-series expansion method of Pretzler:
+            Pretzler, 1991 (Z. Naturforsch 46 a, 639-641).
+
         ``*``
             The methods marked with a * indicate methods that generate basis sets.
             The first time they are run for a new image size,
@@ -422,6 +431,7 @@ class Transform(object):
             "onion_peeling": dasch.onion_peeling_transform,
             "two_point": dasch.two_point_transform,
             "three_point": dasch.three_point_transform,
+            "fourier_expansion": fourier_expansion.fourier_expansion_transform,
         }
 
         self._verboseprint('Calculating {0} Abel transform using {1} method -'
