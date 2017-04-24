@@ -33,7 +33,7 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
 
        H(y) = 2\sum_{n=N_l}^{N_u} A_n h_n(y)
 
-    to the image data 'IM', determing expansion coeffients :math:`A_n`, 
+    to the image data 'IM', determing series expansion coeffients :math:`A_n`, 
     where 
 
     .. math::
@@ -77,7 +77,7 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
     An = np.ones_like(N)
 
     # pre-calculate bases
-    #fbasis, hbasis = _bs_fourier_expansion(cols, N)
+    #fbasis, hbasis = _bs_fourier_series(cols, N)
     (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion", cols,
                                   basis_dir=basis_dir,
                                   basis_options=dict(N=N, rows=rows))
