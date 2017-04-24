@@ -32,6 +32,9 @@ Frad, FPES = FIM.angular_integration
 plt.plot(Trad, TPES/TPES.max(), label="2pt")
 plt.plot(Frad, FPES/FPES.max(), label=r"Fourier $Nu={:d}$".format(Nu))
 plt.axis(xmin=150, xmax=430)
+plt.xlabel("radius (pixels)")
+plt.ylabel("intensity")
+plt.title(r"O$_2{^-}$ photoelectron spectrum")
 plt.legend()
 
 plt.savefig("plot_example_fourier_expansion.png", dpi=75)
