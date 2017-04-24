@@ -34,5 +34,5 @@ plt.plot(Frad, FPES/FPES.max(), label=r"Fourier $Nu={:d}$".format(Nu))
 plt.axis(xmin=150, xmax=430)
 plt.legend()
 
-plt.savefig("plot_example_fourier_series.png", dpi=75)
+plt.savefig("plot_example_fourier_expansion.png", dpi=75)
 plt.show()
