@@ -65,10 +65,10 @@ If you would like to access the `fourier_expansion` algorithm directly (to trans
 Example
 -------
 
-.. image:: ../examples/example_fourier_expansion.png
-   :width: 150 px
+.. figure:: https://cloud.githubusercontent.com/assets/10932229/25362854/cc61ac9c-2999-11e7-82b3-eea81c5dde35.png
+   :width: 500 px
 
-   Comparison of Fourier expansion inverse Abel transform to two-point for the photoelectron spectrum of O\ :sub:`2`\ :sup:`-`.
+   Comparison of Fourier expansion and two-point inverse Abel transforms for the photoelectron spectrum of O\ :sub:`2`\ :sup:`-`.
 
 
 Notes

@@ -15,5 +15,6 @@ Contents:
    example_dasch_methods
    example_onion_bordas
    example_linbasex
+   example_fourier_expansion
    example_anisotropy_parameter
    example_circularize_image
