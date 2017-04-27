@@ -66,43 +66,34 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
 
     IM = np.atleast_2d(IM)
     rows, cols = IM.shape   # shape of input quadrant (or half image)
-    c2 = cols//2
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
-    # many coefficients An may provide a better fit, but creates more computation
+    # more coefficients An may provide a better fit at expense of computation
     if Nu is None:
         Nu = cols//4
 
     N = np.arange(Nl, Nu)
-    An = np.ones_like(N)
+    n = len(N)
 
     # pre-calculate bases
-    #fbasis, hbasis = _bs_fourier_series(cols, N)
-    (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion", cols,
-                                  basis_dir=basis_dir,
-                                  basis_options=dict(N=N, rows=rows))
+    fbasis, hbasis = _bs_fourier_expansion(rows, cols, N)
+    print("fbasis.shape = ", fbasis.shape)
+    print("hbasis.shape = ", hbasis.shape)
 
-    # array to hold the inverse Abel transform
-    AIM = np.zeros_like(IM)
+    # fit basis to the image
+    res = least_squares(residual, np.ones(rows*n), args=(IM, hbasis))
 
-    for rownum, imrow in enumerate(IM):
-        # fit basis to an image row
-        res = least_squares(residual, An, args=(imrow, rownum, hbasis))
-
-        An = res.x  # store as initial guess for next row fit
-
-        # inverse Abel transform is the source basis function
-        # f(r) = \sum_n  An fn(r)
-        # evaluated with the row-fitted coefficients An
-        AIM[rownum] = np.dot(An, fbasis)
+    # inverse Abel transform is the source basis function
+    # f(r) = \sum_n  An fn(r) using the fitted coefficients
+    AIM = np.dot(res.x.reshape((rows, n)), fbasis)
 
     return AIM
 
 
-def residual(An, imrow, rownum, Hbasis):
+def residual(An, IM, hbasis):
     # least-squares adjust coefficients An
-    # difference between image row and the basis function
-    return imrow - 2*np.dot(An, Hbasis[:, rownum])
+    # difference: image and the basis function
+    return (IM - 2*np.dot(An, hbasis)).flatten()
 
 
 def f(r, R, n):
@@ -128,17 +119,16 @@ def h(x, R, n):
                       maxiter=500)[0]
 
 
-def _bs_fourier_expansion(cols, N, rows=None):
+def _bs_fourier_expansion(rows, cols, N):
     """Basis calculations.
 
     f(r) = Fourier cosine series = original distribution
     h(y) = forward Abel transform of f(r)
     """
 
-    fbasis = np.zeros((len(N), cols))
-    if rows is None:
-        rows = cols
-    hbasis = np.zeros((len(N), rows, cols))
+    n = len(N)
+    fbasis = np.zeros((n, cols))
+    hbasis = np.zeros((rows, n, cols))
 
     r = np.arange(cols)
     R = r[-1]   # maximum radial integration range
@@ -146,7 +136,7 @@ def _bs_fourier_expansion(cols, N, rows=None):
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
         # hbasis[N, row, col]
-        for j in r:
-            hbasis[i, :, j] = h(j, R, n)
+        for col in np.arange(cols):
+            hbasis[:, i, col] = h(col, R, n)
 
-    return (fbasis, hbasis)
+    return fbasis, hbasis
