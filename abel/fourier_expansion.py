@@ -77,11 +77,9 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
 
     # pre-calculate bases
     fbasis, hbasis = _bs_fourier_expansion(rows, cols, N)
-    print("fbasis.shape = ", fbasis.shape)
-    print("hbasis.shape = ", hbasis.shape)
 
     # fit basis to the image
-    res = least_squares(residual, np.ones(rows*n), args=(IM, hbasis))
+    res = least_squares(residual, np.ones(rows*n), args=(rows, n, IM, hbasis))
 
     # inverse Abel transform is the source basis function
     # f(r) = \sum_n  An fn(r) using the fitted coefficients
@@ -90,10 +88,10 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
     return AIM
 
 
-def residual(An, IM, hbasis):
+def residual(An, rows, n, IM, hbasis):
     # least-squares adjust coefficients An
-    # difference: image and the basis function
-    return (IM - 2*np.dot(An, hbasis)).flatten()
+    # difference: image and basis function
+    return (IM - 2*np.dot(An.reshape((rows, n)), hbasis)).flatten()
 
 
 def f(r, R, n):
@@ -128,15 +126,14 @@ def _bs_fourier_expansion(rows, cols, N):
 
     n = len(N)
     fbasis = np.zeros((n, cols))
-    hbasis = np.zeros((rows, n, cols))
+    hbasis = np.zeros((n, cols))
 
     r = np.arange(cols)
     R = r[-1]   # maximum radial integration range
 
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
-        # hbasis[N, row, col]
-        for col in np.arange(cols):
-            hbasis[:, i, col] = h(col, R, n)
+        for col in r:
+            hbasis[i, col] = h(col, R, n)
 
     return fbasis, hbasis
