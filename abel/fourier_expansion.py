@@ -79,8 +79,10 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
     An = np.ones_like(N)
 
     # pre-calculate bases
+    # basis name fourier_expansion_{cols}_{Nl}_{Nu}.npy
     (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion",
-                            cols, basis_dir=basis_dir, basis_options=dict(N=N))
+		        cols, basis_dir=basis_dir,
+                        basis_options=dict(Nl=Nl, Nu=Nu))
 
     # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
@@ -129,16 +131,14 @@ def h(x, R, n):
                       maxiter=500)[0]
 
 
-def _bs_fourier_expansion(cols, N=None):
+def _bs_fourier_expansion(cols, Nl, Nu):
     """Basis calculations.
 
     f(r) = Fourier cosine series = original distribution
     h(y) = forward Abel transform of f(r)
     """
 
-    if N is None:
-        N = np.arange(cols//4)
-
+    N = np.arange(Nl, Nu)
     fbasis = np.zeros((len(N), cols))
     hbasis = np.zeros((len(N), cols))
 
