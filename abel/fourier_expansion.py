@@ -85,7 +85,7 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
     # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
 
-    for imrow in IM:
+    for rownum, imrow in enumerate(IM):
         # fit basis to an image row
         res = least_squares(residual, An, args=(imrow, hbasis))
 
