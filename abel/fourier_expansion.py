@@ -9,8 +9,6 @@ import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
 
-import time
-
 #############################################################################
 #
 # Fourier cosine series method of
@@ -29,18 +27,18 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
          <https://doi.org/10.1515/zna-1991-0715>`_
 
-    Least-squares fits 
+    Least-squares fits
 
     .. math::
 
        H(y) = 2\sum_{n=N_l}^{N_u} A_n h_n(y)
 
-    to the image data 'IM', determing series expansion coeffients :math:`A_n`, 
-    where 
+    to the image data 'IM', determing series expansion coeffients :math:`A_n`,
+    where
 
     .. math::
 
-      h_n(y) = \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr 
+      h_n(y) = \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr
 
     is the standard inverse Abel transform.
 
@@ -71,25 +69,22 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
     c2 = cols//2
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
-    # many coefficients An may provide a better fit, but creates more computation
+    # A larger number of coefficients, An, may provide a better fit to the
+    # row intensity profile, but this creates more computation
+
     if Nu is None:
         Nu = cols//4
 
     N = np.arange(Nl, Nu)
     An = np.ones_like(N)
 
-    t0 = time.time()
     # pre-calculate bases
-    #fbasis, hbasis = _bs_fourier_series(cols, N)
-    (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion", cols,
-                                  basis_dir=basis_dir,
-                                  basis_options=dict(N=N))
-    print("basis calculated in {:g} seconds".format(time.time()-t0))
+    (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion",
+                            cols, basis_dir=basis_dir, basis_options=dict(N=N))
 
     # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
 
-    t0 = time.time()
     for rownum, imrow in enumerate(IM):
         # fit basis to an image row
         res = least_squares(residual, An, args=(imrow, rownum, hbasis))
@@ -101,7 +96,6 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
         # evaluated with the row-fitted coefficients An
         AIM[rownum] = np.dot(An, fbasis)
 
-    print("transform in {:g} seconds".format(time.time()-t0))
     return AIM
 
 
