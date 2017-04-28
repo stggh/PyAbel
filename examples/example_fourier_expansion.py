@@ -18,7 +18,7 @@ IMc = abel.tools.center.center_image(IM, center="com")
 Nu = 200
 tf = time.time()
 FIM = abel.Transform(IMc, method='fourier_expansion',
-                     transform_options=dict(Nu=Nu, basis_dir="."),
+                     transform_options=dict(basis_dir=".", Nu=Nu),
                      angular_integration=True)
 tf = time.time() - tf
 

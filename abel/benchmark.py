@@ -9,6 +9,7 @@ import abel
 from . import basex
 from . import dasch
 from . import direct
+from . import fourier_expansion
 from . import linbasex
 from . import hansenlaw
 from . import onion_bordas
@@ -53,6 +54,8 @@ class AbelTiming(object):
             'basex_bs': basex.get_bs_basex_cached,
             'direct_Python': direct.direct_transform,
             'direct_C': direct.direct_transform,
+            'fourier_expansion_bs': fourier_expansion._bs_fourier_expansion,
+            'fourier_expansion': fourier_expansion.fourier_expansion_transform,
             'hansenlaw': hansenlaw.hansenlaw_transform,
             'linbasex': linbasex._linbasex_transform_with_basis,
             'linbasex_bs': linbasex._bs_linbasex,
@@ -67,10 +70,12 @@ class AbelTiming(object):
 
         # result dicts
         res = {}
-        res['bs'] = {'basex_bs': [], 'linbasex_bs': [], 'onion_peeling_bs': [], 
+        res['bs'] = {'basex_bs': [], 'fourier_expansion_bs': [],
+                     'linbasex_bs': [], 'onion_peeling_bs': [],
                      'two_point_bs': [], 'three_point_bs': []}
         res['forward'] = {'direct_Python': [], 'hansenlaw': []}
-        res['inverse'] = {'basex': [], 'direct_Python': [], 'hansenlaw': [],
+        res['inverse'] = {'basex': [], 'direct_Python': [], 
+                          'fourier_expansion':[], 'hansenlaw': [],
                           'linbasex': [],
                           'onion_bordas': [], 'onion_peeling': [],
                           'two_point': [], 'three_point': []}

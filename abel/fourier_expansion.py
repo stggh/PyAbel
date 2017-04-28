@@ -21,7 +21,7 @@ from scipy.integrate import quadrature
 #############################################################################
 
 
-def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
+def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
                                 direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
@@ -129,12 +129,15 @@ def h(x, R, n):
                       maxiter=500)[0]
 
 
-def _bs_fourier_expansion(cols, N):
+def _bs_fourier_expansion(cols, N=None):
     """Basis calculations.
 
     f(r) = Fourier cosine series = original distribution
     h(y) = forward Abel transform of f(r)
     """
+
+    if N is None:
+        N = np.arange(cols//4)
 
     fbasis = np.zeros((len(N), cols))
     hbasis = np.zeros((len(N), cols))
