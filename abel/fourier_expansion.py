@@ -85,9 +85,9 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
     # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
 
-    for rownum, imrow in enumerate(IM):
+    for imrow in IM:
         # fit basis to an image row
-        res = least_squares(residual, An, args=(imrow, rownum, hbasis))
+        res = least_squares(residual, An, args=(imrow, hbasis))
 
         An = res.x  # store as initial guess for next row fit
 
@@ -99,7 +99,7 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
     return AIM
 
 
-def residual(An, imrow, rownum, Hbasis):
+def residual(An, imrow, Hbasis):
     # least-squares adjust coefficients An
     # difference between image row and the basis function
     return imrow - 2*np.dot(An, Hbasis)
@@ -124,6 +124,7 @@ def h(x, R, n):
 
     """
     # Gaussian integration better for 1/sqrt(r^2 - x^2)
+    # 1.0e-9 offset to prevent divide by zero
     return quadrature(fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
                       maxiter=500)[0]
 
@@ -143,7 +144,6 @@ def _bs_fourier_expansion(cols, N):
 
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
-        # hbasis[N, col]
         for j in r:
             hbasis[i, j] = h(j, R, n)
 
