@@ -27,12 +27,15 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
     Parameters
     ----------
     method : str
-        Abel transform method, currently ``linbasex``, ``onion_peeling``,
-        ``three_point``, and ``two_point``
+        Abel transform method, currently ``fourier_expansion``, ``linbasex``,
+        ``onion_peeling``, ``three_point``, and ``two_point``
+
     cols : int
         width of image
+
     basis_dir : str
         path to the directory for saving / loading the basis
+
     verbose: boolean
         print information for debugging 
 
@@ -42,8 +45,10 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
        basis operator array
 
     file.npy: file
-       saves basis to file name ``{method}_basis_{cols}_{cols}*.npy``
-       * == ``__{legendre_orders}_{proj_angles}_{radial_step}_{clip}`` for ``linbasex`` method
+       saves basis to file name ``{method}_basis_{cols}_{*}.npy``
+       * == ``{unique parameter}``, ``_{N}`` for the ``fourier_expansion``
+       method and ``{legendre_orders}_{proj_angles}_{radial_step}_{clip}`` for
+       the ``linbasex`` method
 
     """
 
@@ -59,9 +64,14 @@ def get_bs_cached(method, cols, basis_dir='.', basis_options=dict(),
         raise ValueError("basis generating function for method '{}' not know"
                          .format(method))
 
-    basis_name = "{}_basis_{}_{}".format(method, cols, cols)
-    # special case linbasex requires additional identifying parameters
-    # 
+    basis_name = "{}_basis_{}".format(method, cols)
+    
+    # special cases fourier_expansion and  linbasex require additional
+    # identifying parameters
+    if method == 'fourier_expansion':
+        basis_name += "_{:d}_{:d}".format(basis_options['Nl'],
+                                          basis_options['Nu'])
+
     # linbasex_basis_cols_cols_02_090_0.npy
     if method == "linbasex": 
        # Fix Me! not a simple unique naming mechanism
