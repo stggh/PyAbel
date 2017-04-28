@@ -5,17 +5,20 @@ from __future__ import unicode_literals
 
 import numpy as np
 import abel
+from scipy import ndimage
 import matplotlib.pylab as plt
 import time
 
 IM = np.loadtxt("data/O2-ANU1024.txt.bz2")
+zoom = 1
+IM = ndimage.zoom(IM, zoom)
 
 IMc = abel.tools.center.center_image(IM, center="com")
 
 Nu = 200
 tf = time.time()
 FIM = abel.Transform(IMc, method='fourier_expansion',
-                     transform_options=dict(Nu=Nu),
+                     transform_options=dict(Nu=Nu, basis_dir="."),
                      angular_integration=True)
 tf = time.time() - tf
 
@@ -31,7 +34,7 @@ Trad, TPES = TIM.angular_integration
 Frad, FPES = FIM.angular_integration
 plt.plot(Trad, TPES/TPES.max(), label="2pt")
 plt.plot(Frad, FPES/FPES.max(), label=r"Fourier $Nu={:d}$".format(Nu))
-plt.axis(xmin=150, xmax=430)
+plt.axis(xmin=150*zoom, xmax=430*zoom)
 plt.xlabel("radius (pixels)")
 plt.ylabel("intensity")
 plt.title(r"O$_2{^-}$ photoelectron spectrum")
