@@ -9,6 +9,8 @@ import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
 
+import time
+
 #############################################################################
 #
 # Fourier cosine series method of
@@ -66,32 +68,47 @@ def fourier_expansion_transform(IM, Nl=0, Nu=None, basis_dir=None,
 
     IM = np.atleast_2d(IM)
     rows, cols = IM.shape   # shape of input quadrant (or half image)
+    c2 = cols//2
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
-    # more coefficients An may provide a better fit at expense of computation
+    # many coefficients An may provide a better fit, but creates more computation
     if Nu is None:
         Nu = cols//4
 
     N = np.arange(Nl, Nu)
-    n = len(N)
+    An = np.ones_like(N)
 
+    t0 = time.time()
     # pre-calculate bases
-    fbasis, hbasis = _bs_fourier_expansion(rows, cols, N)
+    #fbasis, hbasis = _bs_fourier_series(cols, N)
+    (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion", cols,
+                                  basis_dir=basis_dir,
+                                  basis_options=dict(N=N))
+    print("basis calculated in {:g} seconds".format(time.time()-t0))
 
-    # fit basis to the image
-    res = least_squares(residual, np.ones(rows*n), args=(rows, n, IM, hbasis))
+    # array to hold the inverse Abel transform
+    AIM = np.zeros_like(IM)
 
-    # inverse Abel transform is the source basis function
-    # f(r) = \sum_n  An fn(r) using the fitted coefficients
-    AIM = np.dot(res.x.reshape((rows, n)), fbasis)
+    t0 = time.time()
+    for rownum, imrow in enumerate(IM):
+        # fit basis to an image row
+        res = least_squares(residual, An, args=(imrow, rownum, hbasis))
 
+        An = res.x  # store as initial guess for next row fit
+
+        # inverse Abel transform is the source basis function
+        # f(r) = \sum_n  An fn(r)
+        # evaluated with the row-fitted coefficients An
+        AIM[rownum] = np.dot(An, fbasis)
+
+    print("transform in {:g} seconds".format(time.time()-t0))
     return AIM
 
 
-def residual(An, rows, n, IM, hbasis):
+def residual(An, imrow, rownum, Hbasis):
     # least-squares adjust coefficients An
-    # difference: image and basis function
-    return (IM - 2*np.dot(An.reshape((rows, n)), hbasis)).flatten()
+    # difference between image row and the basis function
+    return imrow - 2*np.dot(An, Hbasis)
 
 
 def f(r, R, n):
@@ -117,23 +134,23 @@ def h(x, R, n):
                       maxiter=500)[0]
 
 
-def _bs_fourier_expansion(rows, cols, N):
+def _bs_fourier_expansion(cols, N):
     """Basis calculations.
 
     f(r) = Fourier cosine series = original distribution
     h(y) = forward Abel transform of f(r)
     """
 
-    n = len(N)
-    fbasis = np.zeros((n, cols))
-    hbasis = np.zeros((n, cols))
+    fbasis = np.zeros((len(N), cols))
+    hbasis = np.zeros((len(N), cols))
 
     r = np.arange(cols)
     R = r[-1]   # maximum radial integration range
 
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
-        for col in r:
-            hbasis[i, col] = h(col, R, n)
+        # hbasis[N, col]
+        for j in r:
+            hbasis[i, j] = h(j, R, n)
 
-    return fbasis, hbasis
+    return (fbasis, hbasis)
