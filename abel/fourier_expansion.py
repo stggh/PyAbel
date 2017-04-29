@@ -70,15 +70,13 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     """
 
     IM = np.atleast_2d(IM)
-    rows, cols = IM.shape   # shape of input quadrant (or half image)
-    c2 = cols//2
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
     # A larger number of coefficients, An, may provide a better fit to the
     # row intensity profile, but this creates more computation
 
     if Nu is None:
-        # chose a number that may work and not be too slow!
+        # choose a number that may work and not be too slow!
         if Nu > 10:
             Nu = cols//10
         else:
@@ -89,14 +87,14 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     # pre-calculate bases
     # basis name fourier_expansion_{cols}_{Nl}_{Nu}.npy
     Basis = abel.tools.basis.get_bs_cached("fourier_expansion",
-		 cols, basis_dir=basis_dir,
-                 basis_options=dict(Nl=Nl, Nu=Nu))
+                             cols, basis_dir=basis_dir,
+                             basis_options=dict(Nl=Nl, Nu=Nu))
 
     inv_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
 
     if inv_IM.shape[0] == 1:
         inv_IM = inv_IM[0]   # flatten to a vector
-  
+
     return inv_IM
 
 
@@ -112,7 +110,7 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
 
     for rownum, imrow in enumerate(IM):
         # fit basis to an image row
-        res = least_squares(residual, An, args=(imrow, hbasis))
+        res = least_squares(_residual, An, args=(imrow, hbasis))
 
         An = res.x  # store as initial guess for next row fit
 
@@ -121,10 +119,10 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
         # evaluated with the row-fitted coefficients An
         inv_IM[rownum] = np.dot(An, fbasis)
 
-    return inv_IM/dr
+    return inv_IM/dr  # dr Jacobian
 
 
-def residual(An, imrow, hbasis):
+def _residual(An, imrow, hbasis):
     # least-squares adjust coefficients An
     # difference between image row and the basis function
     return imrow - 2*np.dot(An, hbasis)
@@ -161,10 +159,12 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
     h(y) = forward Abel transform of f(r)
     """
 
-    if Nu > 10:
-        Nu = cols//10
-    else:
-        Nu = cols - 1
+    if Nu is None:
+        # choose a number that may work and not be too slow!
+        if Nu > 10:
+            Nu = cols//10
+        else:
+            Nu = cols - 1
 
     N = np.arange(Nl, Nu)
 
