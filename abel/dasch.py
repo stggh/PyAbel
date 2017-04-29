@@ -45,7 +45,7 @@ _dasch_parameter_docstring = \
         The resulting inverse transform is simply scaled by 1/dr.
 
     direction: str
-        only the `direction="inverse"` transform is currently implemented
+        only the `direction="inverse"` transform is currently implemented.
 
 
     Returns
