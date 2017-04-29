@@ -41,7 +41,7 @@ _dasch_parameter_docstring = \
         If None, the operator matrix will not be saved to disk.
 
     dr : float
-        not used (grid size for other algorithms)
+        grid size, used in normalization of intensity
 
     direction: str
         only the `direction="inverse"` transform is currently implemented
