@@ -56,6 +56,7 @@ def test_dasch_zeros():
         recon = dasch_transforms[method](x, direction="inverse")
         assert_allclose(recon, 0)
 
+
 def test_dasch_1d_gaussian(n=101):
     gauss = lambda r, r0, sigma: np.exp(-(r-r0)**2/sigma**2)
 
@@ -78,6 +79,7 @@ def test_dasch_1d_gaussian(n=101):
         ratio_1d = np.sqrt(np.pi)*sigma
 
         assert_allclose(orig_copy[20:], recon[20:]*ratio_1d, rtol=0.0, atol=0.5)
+
 
 def test_dasch_cyl_gaussian(n=101):
     gauss = lambda r, r0, sigma: np.exp(-(r-r0)**2/sigma**2)

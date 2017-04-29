@@ -20,7 +20,7 @@ from scipy.integrate import quadrature
 #############################################################################
 
 
-def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
+def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                                 direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
@@ -56,9 +56,15 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
     Nu : int
         Uppermost ceofficient of Fourier cosine series.
 
+    dr : float
+        Grid size, used in normalization of the intensity
+
+    direction: str
+        Only the `direction="inverse"` transform is currently implemented
+
     Returns
     -------
-    AIM : 1D or 2D numpy array
+    inv_IM : 1D or 2D numpy array
         Inverse Abel transform half-image, the same shape as IM
 
     """
@@ -83,10 +89,15 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
 		 cols, basis_dir=basis_dir,
                  basis_options=dict(Nl=Nl, Nu=Nu))
 
-    return _fourier_expansion_transform_with_basis(IM, Basis)
+    inv_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
+
+    if inv_IM.shape[0] == 1:
+        inv_IM = inv_IM[0]   # flatten to a vector
+  
+    return inv_IM
 
 
-def _fourier_expansion_transform_with_basis(IM, Basis):
+def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
     fbasis, hbasis = Basis
 
     n, cols = fbasis.shape
@@ -94,7 +105,7 @@ def _fourier_expansion_transform_with_basis(IM, Basis):
     An = np.ones(n)
 
     # array to hold the inverse Abel transform
-    AIM = np.zeros_like(IM)
+    inv_IM = np.zeros_like(IM)
 
     for rownum, imrow in enumerate(IM):
         # fit basis to an image row
@@ -105,9 +116,9 @@ def _fourier_expansion_transform_with_basis(IM, Basis):
         # inverse Abel transform is the source basis function
         # f(r) = \sum_n  An fn(r)
         # evaluated with the row-fitted coefficients An
-        AIM[rownum] = np.dot(An, fbasis)
+        inv_IM[rownum] = np.dot(An, fbasis)
 
-    return AIM
+    return inv_IM/dr
 
 
 def residual(An, imrow, hbasis):
