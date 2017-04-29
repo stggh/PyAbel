@@ -57,7 +57,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
         Uppermost ceofficient of Fourier cosine series.
 
     dr : float
-        Grid size, used in normalization of the intensity
+        Sampling size (=1 for pixel images), used for Jacobian scaling.
 
     direction: str
         Only the `direction="inverse"` transform is currently implemented
@@ -79,7 +79,10 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
 
     if Nu is None:
         # chose a number that may work and not be too slow!
-        Nu = cols//10
+        if Nu > 10:
+            Nu = cols//10
+        else:
+            Nu = cols - 1
 
     N = np.arange(Nl, Nu)
 
@@ -158,8 +161,10 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
     h(y) = forward Abel transform of f(r)
     """
 
-    if Nu is None:
+    if Nu > 10:
         Nu = cols//10
+    else:
+        Nu = cols - 1
 
     N = np.arange(Nl, Nu)
 

@@ -41,10 +41,10 @@ _dasch_parameter_docstring = \
         If None, the operator matrix will not be saved to disk.
 
     dr : float
-        grid size, used in normalization of intensity
+        sampling size (=1 for pixel images), used for Jacobian scaling.
 
     direction: str
-        only the `direction="inverse"` transform is currently implemented
+        only the `direction="inverse"` transform is currently implemented.
 
 
     Returns
