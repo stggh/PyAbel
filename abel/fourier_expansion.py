@@ -78,7 +78,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
 
     if Nu is None:
         # choose a number that may work and not be too slow!
-        if Nu > 10:
+        if cols > 10:
             Nu = cols//10
         else:
             Nu = cols - 1
@@ -162,7 +162,7 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
 
     if Nu is None:
         # choose a number that may work and not be too slow!
-        if Nu > 10:
+        if cols > 10:
             Nu = cols//10
         else:
             Nu = cols - 1
