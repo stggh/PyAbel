@@ -12,6 +12,7 @@ n_max_bs   = 10000
 n_max_slow = 10000
 transform_repeat = 4 # for less than 400
 
+# note matplotlib v2 colors
 results = {'basex': ['C0'], 
            'basex_bs': ['C0'],
            'direct_C': ['C8'],
@@ -91,5 +92,5 @@ for n in sizes:
 
 print('complete!!')
 plt.ioff()
-plt.savefig('PyAbel-benchmarks.png',dpi=100)
+plt.savefig('PyAbel-benchmarks.png',dpi=75)
 plt.show()

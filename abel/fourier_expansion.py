@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
@@ -73,16 +72,26 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
     # row intensity profile, but this creates more computation
 
     if Nu is None:
-        Nu = cols//4
+        # chose a number that may work and not be too slow!
+        Nu = cols//10
 
     N = np.arange(Nl, Nu)
-    An = np.ones_like(N)
 
     # pre-calculate bases
     # basis name fourier_expansion_{cols}_{Nl}_{Nu}.npy
-    (fbasis, hbasis) = abel.tools.basis.get_bs_cached("fourier_expansion",
-		        cols, basis_dir=basis_dir,
-                        basis_options=dict(Nl=Nl, Nu=Nu))
+    Basis = abel.tools.basis.get_bs_cached("fourier_expansion",
+		 cols, basis_dir=basis_dir,
+                 basis_options=dict(Nl=Nl, Nu=Nu))
+
+    return _fourier_expansion_transform_with_basis(IM, Basis)
+
+
+def _fourier_expansion_transform_with_basis(IM, Basis):
+    fbasis, hbasis = Basis
+
+    n, cols = fbasis.shape
+    # Fourier series coefficients
+    An = np.ones(n)
 
     # array to hold the inverse Abel transform
     AIM = np.zeros_like(IM)
@@ -101,10 +110,10 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None,
     return AIM
 
 
-def residual(An, imrow, Hbasis):
+def residual(An, imrow, hbasis):
     # least-squares adjust coefficients An
     # difference between image row and the basis function
-    return imrow - 2*np.dot(An, Hbasis)
+    return imrow - 2*np.dot(An, hbasis)
 
 
 def f(r, R, n):
@@ -131,14 +140,18 @@ def h(x, R, n):
                       maxiter=500)[0]
 
 
-def _bs_fourier_expansion(cols, Nl, Nu):
+def _bs_fourier_expansion(cols, Nl=0, Nu=None):
     """Basis calculations.
 
     f(r) = Fourier cosine series = original distribution
     h(y) = forward Abel transform of f(r)
     """
 
+    if Nu is None:
+        Nu = cols//10
+
     N = np.arange(Nl, Nu)
+
     fbasis = np.zeros((len(N), cols))
     hbasis = np.zeros((len(N), cols))
 
