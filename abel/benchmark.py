@@ -55,7 +55,8 @@ class AbelTiming(object):
             'direct_Python': direct.direct_transform,
             'direct_C': direct.direct_transform,
             'fourier_expansion_bs': fourier_expansion._bs_fourier_expansion,
-            'fourier_expansion': fourier_expansion.fourier_expansion_transform,
+            'fourier_expansion': fourier_expansion.\
+                                 _fourier_expansion_transform_with_basis,
             'hansenlaw': hansenlaw.hansenlaw_transform,
             'linbasex': linbasex._linbasex_transform_with_basis,
             'linbasex_bs': linbasex._bs_linbasex,
