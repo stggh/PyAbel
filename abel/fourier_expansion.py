@@ -70,6 +70,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     """
 
     IM = np.atleast_2d(IM)
+    rows, cols = IM.shape
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
     # A larger number of coefficients, An, may provide a better fit to the

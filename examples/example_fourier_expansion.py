@@ -36,7 +36,7 @@ Trad, TPES = TIM.angular_integration
 Frad, FPES = FIM.angular_integration
 plt.plot(Trad, TPES/TPES.max(), label="2pt")
 plt.plot(Frad, FPES/FPES.max(), label=r"Fourier $Nu={:d}$".format(Nu))
-plt.axis(xmin=150*zoom, xmax=430*zoom)
+plt.axis(xmin=140*zoom, xmax=440*zoom)
 plt.xlabel("radius (pixels)")
 plt.ylabel("intensity")
 plt.title(r"O$_2{^-}$ photoelectron spectrum")
