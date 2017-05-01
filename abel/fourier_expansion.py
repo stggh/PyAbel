@@ -21,7 +21,7 @@ from scipy.integrate import quadrature
 
 
 def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
-                                direction='inverse'):
+                                return_coefficients=False, direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
          <https://doi.org/10.1515/zna-1991-0715>`_
@@ -59,13 +59,20 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     dr : float
         Sampling size (=1 for pixel images), used for Jacobian scaling.
 
+    return_coefficients : bool
+        Return the coefficients determined for the last processed image row 
+
     direction: str
         Only the `direction="inverse"` transform is currently implemented
 
     Returns
     -------
     inv_IM : 1D or 2D numpy array
-        Inverse Abel transform half-image, the same shape as IM
+        Inverse Abel transform half-image, the same shape as IM.
+    
+    An : 1D numpy array
+        Cosine series coefficients An (n=Nl, ..., Nu) for the last image row.
+        If `return_coefficients` is True.
 
     """
 
@@ -91,12 +98,12 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                              cols, basis_dir=basis_dir,
                              basis_options=dict(Nl=Nl, Nu=Nu))
 
-    inv_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
+    inv_IM, An = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
 
     if inv_IM.shape[0] == 1:
         inv_IM = inv_IM[0]   # flatten to a vector
 
-    return inv_IM
+    return inv_IM, An
 
 
 def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
@@ -120,7 +127,7 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
         # evaluated with the row-fitted coefficients An
         inv_IM[rownum] = np.dot(An, fbasis)
 
-    return inv_IM/dr  # dr Jacobian
+    return inv_IM/dr, An  # dr Jacobian
 
 
 def _residual(An, imrow, hbasis):
