@@ -7,6 +7,8 @@ import numpy as np
 import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
+from scipy.fftpack import rfft
+
 
 #############################################################################
 #
@@ -21,7 +23,7 @@ from scipy.integrate import quadrature
 
 
 def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
-                                return_coefficients=False, direction='inverse'):
+                                method='lsq', direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
          <https://doi.org/10.1515/zna-1991-0715>`_
@@ -59,8 +61,8 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     dr : float
         Sampling size (=1 for pixel images), used for Jacobian scaling.
 
-    return_coefficients : bool
-        Return the coefficients determined for the last processed image row 
+    method : str
+        Evaluate coefficients using of 'fft' or 'lsq'.
 
     direction: str
         Only the `direction="inverse"` transform is currently implemented
@@ -98,18 +100,16 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                              cols, basis_dir=basis_dir,
                              basis_options=dict(Nl=Nl, Nu=Nu))
 
-    inv_IM, An = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
+    inv_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr,
+                                                     method=method)
 
     if inv_IM.shape[0] == 1:
         inv_IM = inv_IM[0]   # flatten to a vector
 
-    if return_coefficients:
-        return inv_IM, An
-    else:
-        return inv_IM
+    return inv_IM
 
 
-def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
+def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
     fbasis, hbasis = Basis
 
     n, cols = fbasis.shape
@@ -121,16 +121,27 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
 
     for rownum, imrow in enumerate(IM):
         # fit basis to an image row
-        res = least_squares(_residual, An, args=(imrow, hbasis))
+        if method == 'fft':
+            fourier_signal = 2*rfft(imrow)/cols
 
-        An = res.x  # store as initial guess for next row fit
+            # coefficients thanks to 
+            # http://stackoverflow.com/questions/4258106/how-to-calculate-a-fourier-series-in-numpy
+            a0, a = fourier_signal[0], fourier_signal[1:-1].real
+
+            An[1:] = a[:An.size*2-2:2]
+            An[0] = a0/2
+            # change odd n cofficient sign to match basis function
+            An[1:-1:2] = -An[1:-1:2]
+        else:
+            res = least_squares(_residual, An, args=(imrow, hbasis))
+            An = res.x  # store as initial guess for next row fit
 
         # inverse Abel transform is the source basis function
         # f(r) = \sum_n  An fn(r)
         # evaluated with the row-fitted coefficients An
         inv_IM[rownum] = np.dot(An, fbasis)
 
-    return inv_IM/dr, An  # dr Jacobian
+    return inv_IM/dr  # dr Jacobian
 
 
 def _residual(An, imrow, hbasis):

@@ -16,10 +16,11 @@ IM = ndimage.zoom(IM, zoom)
 IMc = abel.tools.center.center_image(IM, center="com")
 
 Nl = 0
-Nu = 200
+Nu = 201
 tf = time.time()
 FIM = abel.Transform(IMc, method='fourier_expansion',
-                     transform_options=dict(basis_dir="bases", Nl=Nl, Nu=Nu),
+                     transform_options=dict(basis_dir="bases", Nl=Nl, Nu=Nu,
+                                            method='lsq'),
                      angular_integration=True)
 tf = time.time() - tf
 
