@@ -103,7 +103,10 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     if inv_IM.shape[0] == 1:
         inv_IM = inv_IM[0]   # flatten to a vector
 
-    return inv_IM, An
+    if return_coefficients:
+        return inv_IM, An
+    else:
+        return inv_IM
 
 
 def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
