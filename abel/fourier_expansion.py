@@ -62,7 +62,9 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
         Sampling size (=1 for pixel images), used for Jacobian scaling.
 
     method : str
-        Evaluate coefficients using of 'fft' or 'lsq'.
+        One of 'fft' or 'lsq'.
+        Evaluate basis coefficients using fast-Fourier transform 'fft'
+        or least-squares fit 'lsq', to the image row.
 
     direction: str
         Only the `direction="inverse"` transform is currently implemented
@@ -129,9 +131,9 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
             a0, a = fourier_signal[0], fourier_signal[1:-1].real
 
             An[1:] = a[:An.size*2-2:2]
-            An[0] = a0/2
             # change odd n cofficient sign to match basis function
             An[1:-1:2] = -An[1:-1:2]
+            An[0] = 0 # a0/2, don't want baseline of projection
         else:
             res = least_squares(_residual, An, args=(imrow, hbasis))
             An = res.x  # store as initial guess for next row fit
@@ -154,7 +156,8 @@ def f(r, R, n):
     """basis function = Fourier cosine series Eq(4).
 
     """
-    return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
+    return 1 - (1 - 2*(n % 2)) * np.cos(2*n*np.pi*r/R) if n > 0 else 1
+    # return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
 
 
 def fh(r, x, R, n):
@@ -190,8 +193,8 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
 
     N = np.arange(Nl, Nu)
 
-    fbasis = np.zeros((len(N), cols))
-    hbasis = np.zeros((len(N), cols))
+    fbasis = np.zeros((N.size, cols))
+    hbasis = np.zeros((N.size, cols))
 
     r = np.arange(cols)
     R = r[-1]   # maximum radial integration range
