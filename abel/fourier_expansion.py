@@ -7,7 +7,6 @@ import numpy as np
 import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
-from scipy.fftpack import rfft
 
 
 #############################################################################
@@ -131,19 +130,20 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
     for rownum, imrow in enumerate(IM):
         # fit basis to an image row
         if method == 'fft':
-            fourier_signal = 2*rfft(imrow)/cols
+            fourier_signal = np.fft.rfft(imrow)*2/cols
 
             # coefficients thanks to 
             # http://stackoverflow.com/questions/4258106/how-to-calculate-a-fourier-series-in-numpy
-            a0, a = fourier_signal[0], fourier_signal[1:-1:2].real
+            a0, a = fourier_signal[0].real, fourier_signal[1:-1].real
+            a = np.append(a0, a)
 
-            An[1:] = a[:An.size-1]
-            # change odd n cofficient sign to match basis function
-            An[:-1:2] = -An[:-1:2]
+            An = a[:An.size]  # coefficients at unit frequencies
+            # change odd n cofficients sign to match basis function
+            An[2:-1:2] = -An[2:-1:2]
 
             # fudge factors
-            An[0] = 0 # a0/2
-            An /= 2*n
+            # An[0] = 0 # a0/2
+            # An /= np.pi*n
         else:
             res = least_squares(_residual, An, args=(imrow, hbasis))
             An = res.x  # store as initial guess for next row fit
