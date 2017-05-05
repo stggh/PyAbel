@@ -136,6 +136,10 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
             An = np.append(fourier[0]/2, fourier[1:An.size*2-1:2])
             # change sign of odd-coefficients to match basis
             An[1::2] = -An[1::2]
+
+            # inverse Abel transform is the source basis function
+            inv_IM[rownum] = np.dot(An, fbasis)
+
     else:
         # least-squares fit projected basis function directly to row intensity
         # profile
@@ -143,10 +147,8 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
             res = least_squares(_residual, An, args=(imrow, hbasis))
             An = res.x  # store as initial guess for next row fit
 
-    # inverse Abel transform is the source basis function
-    # f(r) = \sum_n  An fn(r)
-    # evaluated with the row-fitted coefficients An
-    inv_IM[rownum] = np.dot(An, fbasis)
+            # inverse Abel transform is the source basis function
+            inv_IM[rownum] = np.dot(An, fbasis)
 
     return inv_IM/dr, An  # dr Jacobian
 
@@ -161,8 +163,8 @@ def f(r, R, n):
     """basis function = Fourier cosine series Eq(4).
 
     """
-    return 1 - (1 - 2*(n % 2)) * np.cos(2*n*np.pi*r/R) if n > 0 else 1
-    # return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
+    #return 1 - (1 - 2*(n % 2)) * np.cos(2*n*np.pi*r/R) if n > 0 else 1
+    return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
     # return np.cos(2*n*np.pi*r/R)
 
 
