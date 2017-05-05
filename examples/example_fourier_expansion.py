@@ -20,7 +20,7 @@ Nu = 201
 tf = time.time()
 FIM = abel.Transform(IMc, method='fourier_expansion',
                      transform_options=dict(basis_dir="bases", Nl=Nl, Nu=Nu,
-                                            method='fft'),
+                                            method='lsq'),
                      angular_integration=True)
 tf = time.time() - tf
 
