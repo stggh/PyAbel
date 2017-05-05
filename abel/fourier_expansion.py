@@ -7,6 +7,7 @@ import numpy as np
 import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
+from scipy.fftpack import rfft
 
 
 #############################################################################
@@ -121,37 +122,31 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
     fbasis, hbasis = Basis
 
     n, cols = fbasis.shape
+    c2 = cols//2
     # Fourier series coefficients
     An = np.ones(n)
 
     # array to hold the inverse Abel transform
     inv_IM = np.zeros_like(IM)
 
-    for rownum, imrow in enumerate(IM):
-        # fit basis to an image row
-        if method == 'fft':
-            fourier_signal = np.fft.rfft(imrow)*2/cols
-
-            # coefficients thanks to 
-            # http://stackoverflow.com/questions/4258106/how-to-calculate-a-fourier-series-in-numpy
-            a0, a = fourier_signal[0].real, fourier_signal[1:-1].real
-            a = np.append(a0, a)
-
-            An = a[:An.size]  # coefficients at unit frequencies
-            # change odd n cofficients sign to match basis function
-            An[2:-1:2] = -An[2:-1:2]
-
-            # fudge factors
-            # An[0] = 0 # a0/2
-            # An /= np.pi*n
-        else:
+    if method == 'fft':
+        # fast-Fourier transform to determine basis coefficients
+        for rownum, imrow in enumerate(IM):
+            fourier = rfft(imrow)/c2
+            An = np.append(fourier[0]/2, fourier[1:An.size*2-1:2])
+            # change sign of odd-coefficients to match basis
+            An[1::2] = -An[1::2]
+    else:
+        # least-squares fit projected basis function directly to row intensity
+        # profile
+        for rownum, imrow in enumerate(IM):
             res = least_squares(_residual, An, args=(imrow, hbasis))
             An = res.x  # store as initial guess for next row fit
 
-        # inverse Abel transform is the source basis function
-        # f(r) = \sum_n  An fn(r)
-        # evaluated with the row-fitted coefficients An
-        inv_IM[rownum] = np.dot(An, fbasis)
+    # inverse Abel transform is the source basis function
+    # f(r) = \sum_n  An fn(r)
+    # evaluated with the row-fitted coefficients An
+    inv_IM[rownum] = np.dot(An, fbasis)
 
     return inv_IM/dr, An  # dr Jacobian
 
@@ -168,6 +163,7 @@ def f(r, R, n):
     """
     return 1 - (1 - 2*(n % 2)) * np.cos(2*n*np.pi*r/R) if n > 0 else 1
     # return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
+    # return np.cos(2*n*np.pi*r/R)
 
 
 def fh(r, x, R, n):
