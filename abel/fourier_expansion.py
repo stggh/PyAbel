@@ -7,8 +7,6 @@ import numpy as np
 import abel
 from scipy.optimize import least_squares
 from scipy.integrate import quadrature
-from scipy.fftpack import rfft
-
 
 #############################################################################
 #
@@ -132,12 +130,14 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
     if method == 'fft':
         # fast-Fourier transform to determine basis coefficients
         for rownum, imrow in enumerate(IM):
-            fourier = rfft(imrow)/c2
-            An = np.append(fourier[0]/2, fourier[1:An.size*2-1:2])
-            # change sign of odd-coefficients to match basis
-            An[1::2] = -An[1::2]
+            fourier = np.fft.rfft(imrow)/c2
 
-            # inverse Abel transform is the source basis function
+            # make A0 the image background value
+            An = np.append(imrow[-1], fourier.real[1:n])
+            # swap sign of even-coefficients to match basis definition
+            An[2::2] = -An[2::2]
+
+            # inverse Abel transform
             inv_IM[rownum] = np.dot(An, fbasis)
 
     else:
@@ -147,7 +147,7 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
             res = least_squares(_residual, An, args=(imrow, hbasis))
             An = res.x  # store as initial guess for next row fit
 
-            # inverse Abel transform is the source basis function
+            # inverse Abel transform
             inv_IM[rownum] = np.dot(An, fbasis)
 
     return inv_IM/dr, An  # dr Jacobian
@@ -163,9 +163,9 @@ def f(r, R, n):
     """basis function = Fourier cosine series Eq(4).
 
     """
-    #return 1 - (1 - 2*(n % 2)) * np.cos(2*n*np.pi*r/R) if n > 0 else 1
-    return 1 - (1 - 2*(n % 2)) * np.cos(n*np.pi*r/R) if n > 0 else 1
-    # return np.cos(2*n*np.pi*r/R)
+    if n == 0:
+        return 1
+    return 1 - ((-1)**n) * np.cos(np.pi*n*r/R)
 
 
 def fh(r, x, R, n):
