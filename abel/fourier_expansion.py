@@ -164,8 +164,9 @@ def f(r, R, n):
 
     """
     if n == 0:
-        return 1
-    return 1 - ((-1)**n) * np.cos(np.pi*n*r/R)
+        return np.zeros_like(r)
+
+    return 1 - ((-1)**n) * np.cos(2*np.pi*n*r/R)
 
 
 def fh(r, x, R, n):
