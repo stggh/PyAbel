@@ -21,8 +21,7 @@ from scipy.integrate import quadrature
 
 
 def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
-                                method='lsq', direction='inverse',
-                                return_coefficients=False):
+                                direction='inverse'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
          <https://doi.org/10.1515/zna-1991-0715>`_
@@ -104,19 +103,15 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                              cols, basis_dir=basis_dir,
                              basis_options=dict(Nl=Nl, Nu=Nu))
 
-    inv_IM, An = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr,
-                                                     method=method)
+    inv_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
 
     if inv_IM.shape[0] == 1:
         inv_IM = inv_IM[0]   # flatten to a vector
 
-    if return_coefficients:
-        return inv_IM, An
-    else:
-        return inv_IM
+    return inv_IM
 
 
-def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
+def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
     fbasis, hbasis = Basis
 
     n, cols = fbasis.shape
@@ -127,31 +122,16 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
     # array to hold the inverse Abel transform
     inv_IM = np.zeros_like(IM)
 
-    if method == 'fft':
-        # fast-Fourier transform to determine basis coefficients
-        for rownum, imrow in enumerate(IM):
-            fourier = np.fft.rfft(imrow)/c2
+    # least-squares fit projected basis function directly to row intensity
+    # profile
+    for rownum, imrow in enumerate(IM):
+        res = least_squares(_residual, An, args=(imrow, hbasis))
+        An = res.x  # store as initial guess for next row fit
 
-            # make A0 the image background value
-            # An = np.append(imrow[-1], fourier.real[1:n])
-            An = fourier.real[:n]
-            # swap sign of even-coefficients to match basis definition
-            An[2::2] = -An[2::2]
+        # inverse Abel transform
+        inv_IM[rownum] = np.dot(An, fbasis)
 
-            # inverse Abel transform
-            inv_IM[rownum] = np.dot(An, fbasis)
-
-    else:
-        # least-squares fit projected basis function directly to row intensity
-        # profile
-        for rownum, imrow in enumerate(IM):
-            res = least_squares(_residual, An, args=(imrow, hbasis))
-            An = res.x  # store as initial guess for next row fit
-
-            # inverse Abel transform
-            inv_IM[rownum] = np.dot(An, fbasis)
-
-    return inv_IM/dr, An  # dr Jacobian
+    return inv_IM/dr  # dr Jacobian
 
 
 def _residual(An, imrow, hbasis):
@@ -167,7 +147,7 @@ def f(r, R, n):
     if n == 0:
         return np.zeros_like(r)
 
-    return 1 - ((-1)**n) * np.cos(2*np.pi*n*r/R)
+    return 1 - ((-1)**n) * np.cos(np.pi*n*r/R)
 
 
 def fh(r, x, R, n):
