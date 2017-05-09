@@ -133,7 +133,8 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, method='lsq'):
             fourier = np.fft.rfft(imrow)/c2
 
             # make A0 the image background value
-            An = np.append(imrow[-1], fourier.real[1:n])
+            # An = np.append(imrow[-1], fourier.real[1:n])
+            An = fourier.real[:n]
             # swap sign of even-coefficients to match basis definition
             An[2::2] = -An[2::2]
 
