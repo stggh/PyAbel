@@ -19,8 +19,7 @@ Nl = 0
 Nu = 201
 tf = time.time()
 FIM = abel.Transform(IMc, method='fourier_expansion',
-                     transform_options=dict(basis_dir="bases", Nl=Nl, Nu=Nu,
-                                            method='fft'),
+                     transform_options=dict(basis_dir="bases", Nl=Nl, Nu=Nu),
                      angular_integration=True)
 tf = time.time() - tf
 
@@ -36,7 +35,7 @@ print("2pt in {:g} seconds".format(t2))
 Trad, TPES = TIM.angular_integration
 Frad, FPES = FIM.angular_integration
 plt.plot(Trad, TPES/TPES.max(), label="2pt")
-plt.plot(Frad, FPES/FPES.max(), label=r"Fourier $Nu={:d}$".format(Nu))
+plt.plot(Frad, FPES/FPES.max(), label=r"Fourier expansion $Nu={:d}$".format(Nu))
 plt.axis(xmin=140*zoom, xmax=440*zoom)
 plt.xlabel("radius (pixels)")
 plt.ylabel("intensity")
