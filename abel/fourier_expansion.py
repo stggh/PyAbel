@@ -21,7 +21,7 @@ from scipy.integrate import quadrature
 
 
 def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
-                                direction='inverse'):
+                                direction='inverse', method='lsq'):
     r""" Fourier cosine series inverse Abel transform using the algorithm of
          `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
          <https://doi.org/10.1515/zna-1991-0715>`_
@@ -67,8 +67,8 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     direction : str
         'inverse' or 'forward' Abel transform
 
-    return_coefficients : bool
-        Return the coefficients of the basis function.
+    method : str
+        basis coefficients using 'lsq' or 'fft', for forward transform only
 
     Returns
     -------
@@ -105,7 +105,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
 
     if direction == 'forward':
         transform_IM = _fourier_expansion_forward_transform_with_basis(IM,
-                                                             Basis, dr=dr)
+                        Basis, dr=dr, method=method)
     else:
         transform_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
 
@@ -138,7 +138,8 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
     return inv_IM/dr  # dr Jacobian
 
 
-def _fourier_expansion_forward_transform_with_basis(IM, Basis, dr=1):
+def _fourier_expansion_forward_transform_with_basis(IM, Basis, dr=1,
+                                                    method='fft'):
     fbasis, hbasis = Basis
 
     n, cols = fbasis.shape
@@ -149,14 +150,25 @@ def _fourier_expansion_forward_transform_with_basis(IM, Basis, dr=1):
     # array to hold the inverse Abel transform
     for_IM = np.zeros_like(IM)
 
-    # least-squares fit basis function directly to row intensity
-    # profile
-    for rownum, imrow in enumerate(IM):
-        res = least_squares(_residual, An, args=(imrow, fbasis))
-        An = res.x  # store as initial guess for next row fit
+    if method == 'fft':
+        # basis coefficients via fast Fourier transform
+        for rownum, imrow in enumerate(IM):
+            fftrow = np.fft.rfft(imrow)/c2
+            An = fftrow[:n].real
+            # flip sign of even coefficients to match basis definition
+            An[2::2] = - An[2::2]
 
-        # forward Abel transform
-        for_IM[rownum] = np.dot(An/2, hbasis)
+            # forward Abel transform
+            for_IM[rownum] = 2*np.dot(An, hbasis)
+
+    else:
+        # least-squares fit basis function directly to row intensity
+        for rownum, imrow in enumerate(IM):
+            res = least_squares(_residual, An, args=(imrow, fbasis/2))
+            An = res.x  # store as initial guess for next row fit
+
+            # forward Abel transform
+            for_IM[rownum] = 2*np.dot(An, hbasis)
 
     return for_IM*dr  # dr Jacobian
 
