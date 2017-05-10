@@ -65,7 +65,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
         or least-squares fit 'lsq', to the image row.
 
     direction : str
-        Only the `direction="inverse"` transform is currently implemented
+        'inverse' or 'forward' Abel transform
 
     return_coefficients : bool
         Return the coefficients of the basis function.
@@ -103,12 +103,16 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                              cols, basis_dir=basis_dir,
                              basis_options=dict(Nl=Nl, Nu=Nu))
 
-    inv_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
+    if direction == 'forward':
+        transform_IM = _fourier_expansion_forward_transform_with_basis(IM,
+                                                             Basis, dr=dr)
+    else:
+        transform_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr)
 
-    if inv_IM.shape[0] == 1:
-        inv_IM = inv_IM[0]   # flatten to a vector
+    if transform_IM.shape[0] == 1:
+        transform_IM = transform_IM[0]   # flatten to a vector
 
-    return inv_IM
+    return transform_IM
 
 
 def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
@@ -134,10 +138,33 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1):
     return inv_IM/dr  # dr Jacobian
 
 
-def _residual(An, imrow, hbasis):
+def _fourier_expansion_forward_transform_with_basis(IM, Basis, dr=1):
+    fbasis, hbasis = Basis
+
+    n, cols = fbasis.shape
+    c2 = cols//2
+    # Fourier series coefficients
+    An = np.ones(n)
+
+    # array to hold the inverse Abel transform
+    for_IM = np.zeros_like(IM)
+
+    # least-squares fit basis function directly to row intensity
+    # profile
+    for rownum, imrow in enumerate(IM):
+        res = least_squares(_residual, An, args=(imrow, fbasis))
+        An = res.x  # store as initial guess for next row fit
+
+        # forward Abel transform
+        for_IM[rownum] = np.dot(An/2, hbasis)
+
+    return for_IM*dr  # dr Jacobian
+
+
+def _residual(An, imrow, basis):
     # least-squares adjust coefficients An
     # difference between image row and the basis function
-    return imrow - 2*np.dot(An, hbasis)
+    return imrow - 2*np.dot(An, basis)
 
 
 def f(r, R, n):
