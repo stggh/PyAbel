@@ -154,9 +154,9 @@ def _fourier_expansion_forward_transform_with_basis(IM, Basis, dr=1,
         # basis coefficients via fast Fourier transform
         for rownum, imrow in enumerate(IM):
             fftrow = np.fft.rfft(imrow)/c2
-            An = fftrow[:n].real
+            An = fftrow[:n]
             # flip sign of even coefficients to match basis definition
-            An[2::2] = - An[2::2]
+            # An[2::2] = - An[2::2]
 
             # forward Abel transform
             for_IM[rownum] = 2*np.dot(An, hbasis)
@@ -164,7 +164,7 @@ def _fourier_expansion_forward_transform_with_basis(IM, Basis, dr=1,
     else:
         # least-squares fit basis function directly to row intensity
         for rownum, imrow in enumerate(IM):
-            res = least_squares(_residual, An, args=(imrow, fbasis/2))
+            res = least_squares(_residual, An, args=(imrow*2, fbasis))
             An = res.x  # store as initial guess for next row fit
 
             # forward Abel transform
