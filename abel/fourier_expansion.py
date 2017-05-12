@@ -51,11 +51,12 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
         Right-side half-image (or quadrant).
 
     Nl : int
-        Lowest coefficient of Fourier cosine series.
+        Lowest coefficient order `n` of Fourier cosine series:  
+        `A_n cos(pi n r/R)`
 
     Nu : int
         Uppermost ceofficient of Fourier cosine series.
-        A largere value increases the amount of computation, but may improve
+        A larger value increases the amount of computation, but may improve
         the end transform.
 
     dr : float
