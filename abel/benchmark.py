@@ -74,7 +74,8 @@ class AbelTiming(object):
         res['bs'] = {'basex_bs': [], 'fourier_expansion_bs': [],
                      'linbasex_bs': [], 'onion_peeling_bs': [],
                      'two_point_bs': [], 'three_point_bs': []}
-        res['forward'] = {'direct_Python': [], 'hansenlaw': []}
+        res['forward'] = {'direct_Python': [], 'fourier_expansion': [],
+                          'hansenlaw': []}
         res['inverse'] = {'basex': [], 'direct_Python': [], 
                           'fourier_expansion':[], 'hansenlaw': [],
                           'linbasex': [],
