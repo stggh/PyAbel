@@ -22,27 +22,36 @@ from scipy.integrate import quadrature
 
 def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                                 direction='inverse'):
-    r""" Fourier cosine series inverse Abel transform using the algorithm of
-         `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991)
-         <https://doi.org/10.1515/zna-1991-0715>`_
+    r""" Fourier cosine series Abel transform using the algorithm of `G. Pretzler Z. Naturfosch. 46 a, 639-641 (1991) <https://doi.org/10.1515/zna-1991-0715>`_.
 
-    Least-squares fits
+    Least-squares fits:
 
     .. math::
 
        H(y) = 2\sum_{n=N_l}^{N_u} A_n h_n(y)
 
-    to the image data 'IM', determing series expansion coeffients :math:`A_n`,
-    where
+    to the image data `IM` to determine the series expansion coeffients :math:`A_n`,
+    where:
 
     .. math::
 
-      h_n(y) = \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2} dr
+      h_n(y) = \int_y^R f_n(r) \frac{r}{\sqrt{r^2 - y^2}} dr
 
     is the standard inverse Abel transform.
 
     The source distribution is then given by:
-    :math:`f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)`
+
+    .. math::
+
+      f(r) = \sum_{n=N_l}^{N_u} A_n f_n(r)
+
+    with :math:`f_n(r)` the basis function, a Fourier cosine series:
+
+    .. math ::
+    
+        f_n(r) = 1 - (-1)^n \cos(n \pi \frac{r}{R})
+
+    and :math:`f_0(r) = 1`.
 
 
     Parameters
@@ -51,13 +60,14 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
         Right-side half-image (or quadrant).
 
     Nl : int
-        Lowest coefficient order `n` of Fourier cosine series:
-        `A_n cos(pi n r/R)`
+        Lowest coefficient order `n` of the Fourier cosine series:
+        :math:`A_n \cos(\pi n r/R)`, typically :math:`N_l = 0`.
 
     Nu : int
         Uppermost ceofficient of Fourier cosine series.
         A larger value increases the amount of computation, but may improve
-        the end transform.
+        the end transform. Typically, :math:`N_u \sim 4-200` depending on
+        the image structure and the number of columns.
 
     dr : float
         Sampling size (=1 for pixel images), used for Jacobian scaling.
@@ -69,10 +79,6 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     -------
     trans_IM : 1D or 2D numpy array
         Inverse or forward Abel transform half-image, the same shape as IM.
-
-    An : 1D numpy array
-        Cosine series coefficients An (n=Nl, ..., Nu) for the last image row.
-        If `return_coefficients` is True.
 
     """
 
@@ -146,29 +152,49 @@ def _residual(An, imrow, basis, factor=2):
 
 
 def f(r, R, n):
-    """basis function = Fourier cosine series Eq(4).
+    """basis function, a Fourier cosine series Eq(4).
 
+       .. math::
+
+            f_n(r) = 1 - (-1)^n \cos(n \pi \\frac{r}{R})
+
+    Parameters
+    ----------
+    r : 1D numpy array
+        radial grid
+
+    R : float
+        maximum radius, usually r[-1]
+
+    n : int
+        order of cosine series element
+
+    Returns
+    -------
+    f : 1D numpy array the same size a `r`
+        basis function value(s) for order `n`.
     """
+
     if n == 0:
         return np.zeros_like(r)
 
     return 1 - ((-1)**n) * np.cos(np.pi*n*r/R)
 
 
-def fh(r, x, R, n):
+def _fh(r, x, R, n):
     """Abel transform integrand of f(r), Eq(6).
 
     """
     return f(r, R, n)*r/np.sqrt(r**2 - x**2)
 
 
-def h(x, R, n):
+def _h(x, R, n):
     """Abel transform of basis function f(r), h(y) in Eq(6).
 
     """
     # Gaussian integration better for 1/sqrt(r^2 - x^2)
     # 1.0e-9 offset to prevent divide by zero
-    return quadrature(fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
+    return quadrature(_fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
                       maxiter=500)[0]
 
 
@@ -197,6 +223,6 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
         for j in r:
-            hbasis[i, j] = h(j, R, n)
+            hbasis[i, j] = _h(j, R, n)
 
     return (fbasis, hbasis)

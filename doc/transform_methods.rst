@@ -21,7 +21,7 @@ The numerical Abel transform is computationally intensive, and a basic numerical
 
     8. ``*`` The :doc:`linbasex <transform_methods/linbasex>` 1D-spherical basis method of Gerber et al. evaluates 1D projections of velocity-map images in terms of 1D projections of spherical functions. The results produce directly the coefficients of the involved spherical functions, making the reconstruction of sliced Newton spheres obsolete.
 
-    9. ``*`` The :doc:`fourier_expansion <transform_methos/fourier_expansion>` fourier cosine series expansion, basis, method of Pretzler, determines coefficients of a Fourier cosine series, from fitting each image row to the inverse Abel transform of the basis, which then evaluates the source particle distribution.
+    9. ``*`` The :doc:`fourier_expansion <transform_methods/fourier_expansion>` fourier cosine series expansion, basis method of Pretzler, determines coefficients of a Fourier cosine series, from fitting each image row to the Abel transform of the basis, which then evaluates the source ('inverse' Abel transform) or projection ('forward') particle distribution.
 
     10. (Planned implementation) The :doc:`Fourier–Hankel <transform_methods/fh>` method, which is computationally efficient, but contains significant centerline noise and is known to introduce artifacts. 
 
