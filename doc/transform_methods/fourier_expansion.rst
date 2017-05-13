@@ -11,7 +11,7 @@ From the abstract:
 
 *The unknown radial distribution is expanded in a series of cosine-functions. the amplitudes of which are calculated by least-squares-fitting of the Abel-transformed series to the measured data.*
 
-Note this is one of the slowest inverse Abel transform methods, but it has the advantage of tailoring a basis function to the particular image particle distribution.
+Note this is one of the slower Abel transform methods, but it has an advantage of tailoring a basis function to the particular image particle distribution. The forward transform is also available.
 
 How it works
 ------------
@@ -57,7 +57,7 @@ To complete the inverse transform of a full image with the ``fourier_expansions`
 
     abel.Transform(myImage, method='fourier_expansion', direction='inverse').transform
 
-Note that the forward `fourier_expansion` Abel transform is not yet implemented in PyAbel.
+Set `direction='forward'` to obtain the forward Abel transform.
 
 If you would like to access the `fourier_expansion` algorithm directly (to transform a right-side half-image), you can use :func:`abel.fourier_expansion.fourier_expansion_transform()`.
 
@@ -74,7 +74,7 @@ Example
 Notes
 -----
 
-The basis coefficients :math:`A_n` are determined by a least-squares fit to each row. Reducing the number of coefficients, using a smaller `Nl`, will improve execution speed. 
+The basis coefficients :math:`A_n` are determined by a least-squares fit to each row. Reducing the number of coefficients, using a smaller `Nu`, will improve execution speed. 
 
 
 

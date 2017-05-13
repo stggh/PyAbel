@@ -44,9 +44,11 @@ The outcome of the numerical Abel Transform depends on the exact method used. So
 
     8. ``linbasex`` - the 1D-spherical basis set expansion of Gerber *et al.*
 
-    9. ``fh`` - Fourier–Hankel method (not yet implemented).
+    9. ``fourier_expansion`` - Fourier cosine series basis method of Pretzler (1991).
 
-    10. ``pop`` - polar onion peeling method (not yet implemented).
+    10. ``fh`` - Fourier–Hankel method (not yet implemented).
+
+    11. ``pop`` - polar onion peeling method (not yet implemented).
 
 
 Installation
