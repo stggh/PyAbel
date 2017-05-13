@@ -51,7 +51,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
         Right-side half-image (or quadrant).
 
     Nl : int
-        Lowest coefficient order `n` of Fourier cosine series:  
+        Lowest coefficient order `n` of Fourier cosine series:
         `A_n cos(pi n r/R)`
 
     Nu : int
@@ -69,7 +69,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     -------
     trans_IM : 1D or 2D numpy array
         Inverse or forward Abel transform half-image, the same shape as IM.
-    
+
     An : 1D numpy array
         Cosine series coefficients An (n=Nl, ..., Nu) for the last image row.
         If `return_coefficients` is True.
@@ -95,8 +95,8 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     # pre-calculate bases
     # basis name fourier_expansion_{cols}_{Nl}_{Nu}.npy
     Basis = abel.tools.basis.get_bs_cached("fourier_expansion",
-                             cols, basis_dir=basis_dir,
-                             basis_options=dict(Nl=Nl, Nu=Nu))
+                                           cols, basis_dir=basis_dir,
+                                           basis_options=dict(Nl=Nl, Nu=Nu))
 
     transform_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr,
                                                            direction=direction)
@@ -110,7 +110,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
 def _fourier_expansion_transform_with_basis(IM, Basis, dr=1,
                                             direction='inverse'):
     if direction == 'forward':
-        # swap bases 
+        # swap bases
         hbasis, fbasis = Basis
         Jacobian = dr
         factor = (1, 2)
