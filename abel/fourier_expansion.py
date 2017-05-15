@@ -182,20 +182,37 @@ def f(r, R, n):
 
 
 def _fh(r, x, R, n):
-    """Abel transform integrand of f(r), Eq(6).
+    """ Abel transform integrand of f(r), Eq(6).
 
     """
     return f(r, R, n)*r/np.sqrt(r**2 - x**2)
 
 
-def _h(x, R, n):
+def _hquad(a, b, n):
     """Abel transform of basis function f(r), h(y) in Eq(6).
 
     """
     # Gaussian integration better for 1/sqrt(r^2 - x^2)
     # 1.0e-9 offset to prevent divide by zero
-    return quadrature(_fh, x+1.0e-9, R, args=(x, R, n), rtol=1.0e-4,
+    return quadrature(_fh, a+1.0e-9, b, args=(a, b, n), rtol=1.0e-4,
                       maxiter=500)[0]
+
+
+def _hgauss(a, b, n, sample_pts, weights):
+    """  Abel transform of basis function f(r), h(y) in Eq(6).
+
+    """
+
+    # radii = ((b + a) + (b - a)*sample_pts)/2
+    # weights *= np.sqrt(1 - sample_pts**2)
+    # return np.dot(weights, _fh(radii, a, b, n))*(b - a)/2
+
+    sumi = 0
+    for l, xi in enumerate(sample_pts):
+       radius = (b + a)/2 + (b - a)*xi/2
+       sumi += weights[l]*_fh(radius, a, b, n)*np.sqrt(1 - xi**2)
+
+    return sumi*(b - a)/2
 
 
 def _bs_fourier_expansion(cols, Nl=0, Nu=None):
@@ -217,12 +234,16 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
     fbasis = np.zeros((N.size, cols))
     hbasis = np.zeros((N.size, cols))
 
+    # Gauss-Chebyshev quadrature
+    sample_pts, weights = np.polynomial.chebyshev.chebgauss(Nu)
+
     r = np.arange(cols)
     R = r[-1]   # maximum radial integration range
 
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
-        for j in r:
-            hbasis[i, j] = _h(j, R, n)
+        for j in r[:-1]:
+#            hbasis[i, j] = _hquad(j, R, n)
+            hbasis[i, j] = _hgauss(j, R, n, sample_pts, weights)
 
     return (fbasis, hbasis)
