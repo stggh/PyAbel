@@ -151,7 +151,7 @@ def _residual(An, imrow, basis, factor=2):
     return imrow - factor*np.dot(An, basis)
 
 
-def f(r, R, n):
+def f(r, b, n):
     """basis function, a Fourier cosine series Eq(4).
 
        .. math::
@@ -163,7 +163,7 @@ def f(r, R, n):
     r : 1D numpy array
         radial grid
 
-    R : float
+    b : float
         maximum radius, usually r[-1]
 
     n : int
@@ -178,21 +178,20 @@ def f(r, R, n):
     if n == 0:
         return np.zeros_like(r)
 
-    return 1 - ((-1)**n) * np.cos(np.pi*n*r/R)
+    return 1 - (-1)**n * np.cos(np.pi*n*r/b)
 
 
-def _fh(r, x, R, n):
+def _fh(r, a, b, n):
     """ Abel transform integrand of f(r), Eq(6).
 
     """
-    return f(r, R, n)*r/np.sqrt(r**2 - x**2)
+    return f(r, b, n)*r/np.sqrt(r**2 - a**2)
 
 
 def _hquad(a, b, n):
     """Abel transform of basis function f(r), h(y) in Eq(6).
 
     """
-    # Gaussian integration better for 1/sqrt(r^2 - x^2)
     # 1.0e-9 offset to prevent divide by zero
     return quadrature(_fh, a+1.0e-9, b, args=(a, b, n), rtol=1.0e-4,
                       maxiter=500)[0]
