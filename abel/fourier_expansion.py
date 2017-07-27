@@ -178,7 +178,8 @@ def f(r, b, n):
     if n == 0:
         return np.zeros_like(r)
 
-    return 1 - (-1)**n * np.cos(np.pi*n*r/b)
+    # return 1 - (-1)**n * np.cos(np.pi*n*r/b)
+    return 1 - (1 - 2*(n%2))**n * np.cos(np.pi*n*r/b)
 
 
 def _fh(r, a, b, n):
@@ -242,7 +243,7 @@ def _bs_fourier_expansion(cols, Nl=0, Nu=None):
     for i, n in enumerate(N):
         fbasis[i] = f(r, R, n)
         for j in r[:-1]:
-#            hbasis[i, j] = _hquad(j, R, n)
-            hbasis[i, j] = _hgauss(j, R, n, sample_pts, weights)
+            hbasis[i, j] = _hquad(j, R, n)
+#            hbasis[i, j] = _hgauss(j, R, n, sample_pts, weights)
 
     return (fbasis, hbasis)
