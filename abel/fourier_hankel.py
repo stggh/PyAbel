@@ -5,8 +5,9 @@ from __future__ import unicode_literals
 
 import numpy as np
 import abel
-import hankel
-from scipy.interpolate import RectBivariateSpline
+from hankel import HankelTransform
+from scipy.interpolate import RectBivariateSpline as spline
+from scipy.fftpack import fft2, ifft2, fftfreq   
 
 #############################################################################
 #
@@ -44,17 +45,18 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse', basis_dir=None):
 
     y = np.arange(rows)
     x = np.arange(cols)
-    sp = RectBivariateSpline(y, x, IM)
+    X, Y = np.meshgrid(x, y)
+    R = np.sqrt(X**2 + Y**2)
+    sp = spline(y, x, IM)
 
-    grid = np.indices((rows, cols))
+    ht = HankelTransform()
+    iht = ht.transform(sp.ev, R, inverse=True) 
 
-    ht = hankel.HankelTransform()
-    ft = hankel.SymmetricFourierTransform()
-    
-    iht = ht.transform(sp.eval, grid, inverse=True) 
-    fft = ft.transform(iht, grid)
+    ihht = ith(R)
 
-    transform_IM = iht*fft
+    ifft = np.iffts(iht(Y, X))
+
+    transform_IM = iht*ifft
   
 
     if transform_IM.shape[0] == 1:
@@ -63,13 +65,6 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse', basis_dir=None):
     return transform_IM
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
     IM = np.loadtxt("O2-ANU1024.txt")
-    rows, cols = IM.shape
-
-    IMc = abel.tools.symmetry.get_image_quadrants(IM)
     
-    AIM = fourier_hankel_transform(IM[1]) 
-
-    plt.imshow(AIM)
-    plt.show()
+    AIM = fourier_hankel_transform(IM)
