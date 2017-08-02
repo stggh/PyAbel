@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 import abel
-from scipy.optimize import least_squares
 from scipy.integrate import quadrature
 
 #############################################################################
@@ -86,9 +85,6 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     rows, cols = IM.shape
 
     # coefficients of cosine series: f(r) = An (1 - (-1)^n cos(n pi r/R))
-    # A larger number of coefficients, An, may provide a better fit to the
-    # row intensity profile, but this creates more computation
-
     if Nu is None:
         # choose a number that may work and not be too slow!
         if cols > 10:
@@ -105,6 +101,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
                                            basis_options=dict(Nl=Nl, Nu=Nu))
 
     transform_IM = _fourier_expansion_transform_with_basis(IM, Basis, dr=dr,
+                                                           Nu=Nu,
                                                            direction=direction)
 
     if transform_IM.shape[0] == 1:
@@ -113,7 +110,7 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     return transform_IM
 
 
-def _fourier_expansion_transform_with_basis(IM, Basis, dr=1,
+def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, Nu=None,
                                             direction='inverse'):
     if direction == 'forward':
         # swap bases
@@ -125,30 +122,31 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1,
         Jacobian = 1/dr
         factor = (2, 1)
 
-    n, cols = fbasis.shape
-    c2 = cols//2
+    rows, cols = fbasis.shape
 
-    # Fourier series coefficients - starting values = 1
-    An = np.ones(n)
+    # Cosine coefficients at unit frequencies
+    fftfreq = np.fft.rfftfreq(cols, d=dr/cols)
 
-    # image np.array to hold the inverse Abel transform
+    unitfreqindx = np.zeros(Nu, dtype=int)
+    for i in np.arange(Nu):
+        indx =  np.abs(fftfreq-i).argmin()
+        unitfreqindx[i] = indx
+
+    # Fourier series coefficients
+    An = np.zeros(Nu)
+
     trans_IM = np.zeros_like(IM)
 
-    # least-squares fit basis function directly to row intensity profile
-    for rownum, imrow in enumerate(IM):
-        res = least_squares(_residual, An, args=(imrow, hbasis, factor[0]))
-        An = res.x  # keep as the initial guess for next row fit
+    for row, imrow in enumerate(IM):
+        # duplicate function to make symmetric - coefficients are then real
+        fft = np.fft.rfft(np.append(imrow[::-1], imrow)).real/cols
 
+        An[1:] = fft[unitfreqindx[:-1]] 
+ 
         # Abel transform  Eq. (3) inverse, or Eq. (5) forward
-        trans_IM[rownum] = factor[1]*np.dot(An, fbasis)
+        trans_IM[row] = factor[1]*np.dot(An, fbasis)
 
     return trans_IM*Jacobian
-
-
-def _residual(An, imrow, basis, factor=2):
-    # least-squares adjust coefficients An
-    # difference between image row and the basis function
-    return imrow - factor*np.dot(An, basis)
 
 
 def f(r, b, n):
