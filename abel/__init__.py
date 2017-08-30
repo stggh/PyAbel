@@ -8,7 +8,7 @@ from ._version import __version__
 from . import basex
 from . import benchmark
 from . import direct
-from . import fourier_expansion
+from . import fourier_hankel
 from . import hansenlaw
 from . import linbasex
 from . import onion_bordas
