@@ -2,23 +2,60 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
-
 import numpy as np
 import abel
-from hankel import HankelTransform
-from scipy.interpolate import RectBivariateSpline as spline
-from scipy.fftpack import fft2, ifft2, fftfreq   
+from scipy.special import jn
+from scipy.ndimage import zoom
+import matplotlib.pyplot as plt
 
 #############################################################################
 #
 # Fourier-Hankel method:    FA = H
 #
-# NB uses hankel  https://github.com/steven-murray/hankel
-#
-# 2017-07 Stephen Gibson - python coded algorithm
-#         Dan Hickstein - code improvements
+# 2017-08-29 
+#  see https://github.com/PyAbel/PyAbel/issues/24#issuecomment-325547436
+#  Steven Murray - implementation
+#  Stephen Gibson, Dan Hickstein - adapted for PyAbel
 #
 #############################################################################
+
+def construct_dht_matrix(N, nu  = 0, b = 1):
+    m = np.arange(0,N).astype('float')
+    n = np.arange(0,N).astype('float')
+    return b * jn(nu, np.outer(b*m, n/N))
+
+
+def dht(X, d = 1, nu = 0, axis=-1, b = 1):
+    N = X.shape[axis]
+    
+    prefac = d**2
+    m = np.arange(0,N)
+    freq = m/(float(d)*N)
+    
+    F = construct_dht_matrix(N,nu,b)*m
+    return prefac * np.tensordot(F, X, axes=([1],[axis])) #, freq
+
+
+def dft(X):
+    # discrete Fourier transform
+    n = X.shape[-1]
+    X = np.append(X[::-1], X)  # make symmetric
+
+    return np.abs(np.fft.rfft(X)[:n])/n
+
+
+def hankel_fourier_transform(X, d=1, nu = 0, direction='inverse'):
+    n = X.shape[-1]
+    if direction == 'inverse':
+        fx = dft(X)  # Fourier transform
+        hf = dht(fx, d=1/(n*d), nu=nu, b=np.pi) * n / 2  # Hankel transform
+    elif direction == 'forward':
+        hx = dht(X, d=1/(n*d), nu=nu, b=np.pi) * 2  # Hankel transform
+        hf = dft(hx)  # Fourier transform
+    else:
+        raise ValueError('direction must be either "inverse" or "forward"')
+
+    return hf
 
 
 def fourier_hankel_transform(IM, dr=1, direction='inverse', basis_dir=None):
@@ -43,28 +80,12 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse', basis_dir=None):
     IM = np.atleast_2d(IM)
     rows, cols = IM.shape
 
-    y = np.arange(rows)
-    x = np.arange(cols)
-    X, Y = np.meshgrid(x, y)
-    R = np.sqrt(X**2 + Y**2)
-    sp = spline(y, x, IM)
+    transform_IM = np.zeros_like(IM)
 
-    ht = HankelTransform()
-    iht = ht.transform(sp.ev, R, inverse=True) 
-
-    ihht = ith(R)
-
-    ifft = np.iffts(iht(Y, X))
-
-    transform_IM = iht*ifft
-  
+    for i, row in enumerate(IM):
+        transform_IM[i] = hankel_fourier_transform(row, direction=direction)
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
 
     return transform_IM
-
-if __name__ == '__main__':
-    IM = np.loadtxt("O2-ANU1024.txt")
-    
-    AIM = fourier_hankel_transform(IM)

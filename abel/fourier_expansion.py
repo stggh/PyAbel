@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import numpy as np
 import abel
 from scipy.integrate import quadrature
+from scipy.optimize import least_squares
 
 #############################################################################
 #
@@ -110,6 +111,12 @@ def fourier_expansion_transform(IM, basis_dir='.', Nl=0, Nu=None, dr=1,
     return transform_IM
 
 
+def _residual(An, imrow, basis, factor=2):
+    # least-squares adjust coefficients An
+    # difference between image row and the basis function
+    return imrow - factor*np.dot(An, basis)
+
+
 def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, Nu=None,
                                             direction='inverse'):
     if direction == 'forward':
@@ -132,16 +139,30 @@ def _fourier_expansion_transform_with_basis(IM, Basis, dr=1, Nu=None,
         indx =  np.abs(fftfreq-i).argmin()
         unitfreqindx[i] = indx
 
-    # Fourier series coefficients
-    An = np.zeros(Nu)
-
     trans_IM = np.zeros_like(IM)
+    Bn = np.ones(Nu)
 
     for row, imrow in enumerate(IM):
         # duplicate function to make symmetric - coefficients are then real
         fft = np.fft.rfft(np.append(imrow[::-1], imrow)).real/cols
 
-        An[1:] = fft[unitfreqindx[:-1]] 
+        # cosine series coefficients
+        An = fft[unitfreqindx] 
+        # swap sign + shift matches basis function definition
+        An[0] = 0
+        An[2::2] = -An[2::2]
+
+        res = least_squares(_residual, Bn, args=(imrow, hbasis, factor[0]))
+        Bn = res.x  # keep as the initial guess for next row fit
+ 
+        if row == rows-1:
+            import matplotlib.pyplot as plt
+            r = np.arange(Nu)
+            plt.plot(r, An, 'o')
+            plt.plot(r, Bn*100, 's', mfc='w')
+            print(An)
+            print(Bn)
+            plt.show()
  
         # Abel transform  Eq. (3) inverse, or Eq. (5) forward
         trans_IM[row] = factor[1]*np.dot(An, fbasis)
@@ -176,8 +197,8 @@ def f(r, b, n):
     if n == 0:
         return np.zeros_like(r)
 
-    # return 1 - (-1)**n * np.cos(np.pi*n*r/b)
-    return 1 - (1 - 2*(n%2))**n * np.cos(np.pi*n*r/b)
+    return 1 - (-1)**n * np.cos(np.pi*n*r/b)
+    # return np.cos(2*np.pi*n*r/b)
 
 
 def _fh(r, a, b, n):
