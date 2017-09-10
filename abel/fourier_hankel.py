@@ -5,7 +5,8 @@ from __future__ import unicode_literals
 import numpy as np
 import abel
 from scipy.special import jn, jn_zeros
-from scipy.ndimage import zoom
+from scipy.interpolate import UnivariateSpline
+
 import matplotlib.pyplot as plt
 
 #############################################################################
@@ -20,34 +21,33 @@ import matplotlib.pyplot as plt
 #############################################################################
 
 
-def construct_dht_matrix(N, nu=0, b=1):
-    m = np.arange(N)
-    k = np.arange(N)
+def transformation_matrix(jz, nu=0):
+    # Baddour transformation matrix Eq. (25) JOSA A32, 611-622 (2015)
+    b = 2/(jn(nu+1, jz) * jn(nu+1, jz) * jz[-1])
 
-    jz = jn_zeros(nu, N+1)  # spherical Bessel zeros
-
-    """
-    # Murray
-    b * jn(nu, np.outer(b*m, k/N))
-
-    # Baddour Eq. (19) 
-    b = 2/(jz[N] * jn(nu, jz[k])**2)
-    Y = jn(nu, np.outer(jz[m], jz[k] / jz[N]))
-    Y = b * Y
-    """
-
-    # Baddour Eq. (25)
-    b = 2/(jn(nu+1, jz[m]) * jn(nu+1, jz[k]) * jz[N])
-    T = b * jn(nu, np.outer(jz[m], jz[k] / jz[N]))
-    
-    return T
+    return b * jn(nu, np.outer(jz, jz / jz[-1]))
 
 
-def dht(X, d=1, nu=0, axis=-1, b=1):
-    N = X.shape[axis]
-    F = construct_dht_matrix(N, nu, b)*np.arange(N)
+def dht(X, nu=0, axis=-1):
+    n = X.shape[axis]
+    r = np.arange(n)
 
-    return d**2 * np.tensordot(F, X, axes=([1], [axis]))
+    # sample space  jz*r[-1]/jz[-1]
+    jz = jn_zeros(nu, n+1)
+    N = np.abs(jz-r[-1]).argmin()  # set N such that jz[N] ~ R
+    jz = jz[:N+1]
+
+    T = transformation_matrix(jz, nu)
+
+    spl = UnivariateSpline(r, X)
+    r_sample = jz*r[-1]/jz[-1]
+    Xsample = spl(r_sample)
+
+    HXsample = np.tensordot(T, Xsample, axes=([1], [axis]))*r[-1]**2/jz[-1]
+
+    spl = UnivariateSpline(jz, HXsample)
+
+    return spl(r)
 
 
 def dft(X, axis=-1):
@@ -56,9 +56,9 @@ def dft(X, axis=-1):
 
     # Build a slicer to remove last element from flipped array
     slc = [slice(None)] * len(X.shape)
-    slc[axis] = slice(None, -1)
+    slc[axis] = slice(None,-1)
 
-    X = np.append(np.flip(X, axis)[slc], X, axis=axis)  # make symmetric
+    X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
 
     return np.abs(np.fft.rfft(X, axis=axis)[:n])/n
 
@@ -68,9 +68,9 @@ def hankel_fourier_transform(X, d=1, nu=0, inverse=True, axis=-1):
 
     if inverse:
         fx = dft(X, axis=axis)  # Fourier transform
-        hf = dht(fx, d=1/(n*d), nu=nu, b=np.pi, axis=axis)*n  # Hankel
+        hf = dht(fx, nu=nu, axis=axis)*n  # Hankel
     else:
-        hx = dht(X, d=1/(n*d), nu=nu, b=np.pi, axis=axis)
+        hx = dht(X, nu=nu, axis=axis)
         hf = dft(hx)
 
     return hf
