@@ -46,7 +46,7 @@ def test_fourier_hankel_1d_gaussian(n=101):
 
     recon = abel.fourier_hankel.fourier_hankel_transform(orig)
 
-    ratio_1d = np.sqrt(np.pi)*sigma
+    ratio_1d = 1 # np.sqrt(np.pi)*sigma  
 
     assert_allclose(orig_copy[20:], recon[20:]*ratio_1d, rtol=0.0, atol=0.5)
 

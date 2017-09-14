@@ -21,34 +21,35 @@ import matplotlib.pyplot as plt
 #############################################################################
 
 
-def transformation_matrix(jz, nu=0):
-    # Baddour transformation matrix Eq. (25) JOSA A32, 611-622 (2015)
-    b = 2/(jn(nu+1, jz) * jn(nu+1, jz) * jz[-1])
+def Hankel(F, nu=0):
+    """ inverse Hankel transform basic \sum r_i F_i J_nu(2pi j i/2n)
 
-    return b * jn(nu, np.outer(jz, jz / jz[-1]))
+    Based on Whitaker C-code in "Image reconstruction: The Abel transform" Ch 5
+        
+    """
+    n = F.shape[-1]
+
+    Nyquist = 1/(2*n)
+
+    f = np.zeros_like(F)
+    i = np.arange(n)
+
+    for j in i:
+       q = Nyquist*j
+       f[:] += q*F[j]*jn(nu, 2*np.pi*q*i[:])
+
+    return f
 
 
 def dht(X, nu=0, axis=-1):
-    n = X.shape[axis]
-    r = np.arange(n)
 
-    # sample space  jz*r[-1]/jz[-1]
-    jz = jn_zeros(nu, n+1)
-    N = np.abs(jz-r[-1]).argmin()  # set N such that jz[N] ~ R
-    jz = jz[:N+1]
+    HX = np.zeros_like(X)
 
-    T = transformation_matrix(jz, nu)
-
-    spl = UnivariateSpline(r, X)
-    r_sample = jz*r[-1]/jz[-1]
-    Xsample = spl(r_sample)
-
-    HXsample = np.tensordot(T, Xsample, axes=([1], [axis]))*r[-1]**2/jz[-1]
-
-    spl = UnivariateSpline(jz, HXsample)
-
-    return spl(r)
-
+    for i, row in enumerate(X):
+       HX[i] = Hankel(row, nu=nu)
+    
+    return HX
+        
 
 def dft(X, axis=-1):
     # discrete Fourier transform
@@ -63,10 +64,11 @@ def dft(X, axis=-1):
     return np.abs(np.fft.rfft(X, axis=axis)[:n])/n
 
 
-def hankel_fourier_transform(X, d=1, nu=0, inverse=True, axis=-1):
+def hankel_fourier_transform(X, d=1, nu=0, direction='inverse', axis=-1):
     n = X.shape[axis]
 
-    if inverse:
+    if direction == 'inverse':
+        import matplotlib.pyplot as plt
         fx = dft(X, axis=axis)  # Fourier transform
         hf = dht(fx, nu=nu, axis=axis)*n  # Hankel
     else:
@@ -76,7 +78,8 @@ def hankel_fourier_transform(X, d=1, nu=0, inverse=True, axis=-1):
     return hf
 
 
-def fourier_hankel_transform(IM, dr=1, inverse=True, basis_dir=None, nu=0):
+def fourier_hankel_transform(IM, dr=1, direction='inverse', 
+                             basis_dir=None, nu=0):
     """
     Parameters
     ----------
@@ -92,7 +95,7 @@ def fourier_hankel_transform(IM, dr=1, inverse=True, basis_dir=None, nu=0):
         Inverse or forward Abel transform half-image, the same shape as IM.
     """
     IM = np.atleast_2d(IM)
-    transform_IM = hankel_fourier_transform(IM, inverse=inverse, nu=nu)
+    transform_IM = hankel_fourier_transform(IM, direction=direction, nu=nu)
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
