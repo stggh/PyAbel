@@ -21,35 +21,15 @@ import matplotlib.pyplot as plt
 #############################################################################
 
 
-def Hankel(F, nu=0):
-    """ inverse Hankel transform basic \sum r_i F_i J_nu(2pi j i/2n)
+def dht(X, d = 1, nu = 0, axis=-1, b = 1):
+    N = X.shape[axis]
 
-    Based on Whitaker C-code in "Image reconstruction: The Abel transform" Ch 5
-        
-    """
-    n = F.shape[-1]
+    m = np.arange(N)
+    freq = m/(d*N)
 
-    Nyquist = 1/(2*n)
+    F = b * jn(nu, np.outer(b*m, m/N))*m
+    return d**2 * np.tensordot(F, X, axes=([1], [axis])) # , freq
 
-    f = np.zeros_like(F)
-    i = np.arange(n)
-
-    for j in i:
-       q = Nyquist*j
-       f[:] += q*F[j]*jn(nu, 2*np.pi*q*i[:])
-
-    return f
-
-
-def dht(X, nu=0, axis=-1):
-
-    HX = np.zeros_like(X)
-
-    for i, row in enumerate(X):
-       HX[i] = Hankel(row, nu=nu)
-    
-    return HX
-        
 
 def dft(X, axis=-1):
     # discrete Fourier transform
@@ -60,26 +40,13 @@ def dft(X, axis=-1):
     slc[axis] = slice(None,-1)
 
     X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
+    fftX = np.abs(np.fft.rfft(X, axis=axis)[:n])/n
 
-    return np.abs(np.fft.rfft(X, axis=axis)[:n])/n
-
-
-def hankel_fourier_transform(X, d=1, nu=0, direction='inverse', axis=-1):
-    n = X.shape[axis]
-
-    if direction == 'inverse':
-        import matplotlib.pyplot as plt
-        fx = dft(X, axis=axis)  # Fourier transform
-        hf = dht(fx, nu=nu, axis=axis)*n  # Hankel
-    else:
-        hx = dht(X, nu=nu, axis=axis)
-        hf = dft(hx)
-
-    return hf
+    return fftX
 
 
 def fourier_hankel_transform(IM, dr=1, direction='inverse', 
-                             basis_dir=None, nu=0):
+                             basis_dir=None, nu=0, axis=-1):
     """
     Parameters
     ----------
@@ -95,7 +62,14 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
         Inverse or forward Abel transform half-image, the same shape as IM.
     """
     IM = np.atleast_2d(IM)
-    transform_IM = hankel_fourier_transform(IM, direction=direction, nu=nu)
+    n = IM.shape[axis]
+
+    if direction == 'inverse':
+        fftIM = dft(IM, axis=-1)  # Fourier transform
+        transform_IM = dht(fftIM, nu=nu, axis=axis)*n/2  # Hankel
+    else:
+        htIM = dht(IM, nu=nu, axis=axis)
+        transform_IM = dft(htIM)
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
