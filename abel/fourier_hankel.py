@@ -27,20 +27,21 @@ def dht(X, d = 1, nu = 0, axis=-1, b = 1):
     m = np.arange(N)
     freq = m/(d*N)
 
-    F = b * jn(nu, np.outer(b*m, m/N))*m
+    F = b * jn(nu, np.outer(b*m, np.pi*m/N)) # *m
+
     return d**2 * np.tensordot(F, X, axes=([1], [axis])) # , freq
 
 
 def dft(X, axis=-1):
     # discrete Fourier transform
-    n = X.shape[axis]
 
     # Build a slicer to remove last element from flipped array
     slc = [slice(None)] * len(X.shape)
     slc[axis] = slice(None,-1)
 
     X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
-    fftX = np.abs(np.fft.rfft(X, axis=axis)[:n])/n
+    n = X.shape[axis]
+    fftX = np.abs(np.fft.rfft(X, axis=axis))[::2]*2/n
 
     return fftX
 
