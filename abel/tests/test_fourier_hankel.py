@@ -29,6 +29,26 @@ def test_fourier_hankel_zeros():
     assert_allclose(recon, 0)
 
 
+def test_fourier_hankel_dft():
+    def f(r, nu, a):   # Baddour Eq. (82)
+        return np.exp(-(r*a)**2)*(r**nu)
+
+    n = 501
+    a = 1
+    nu = 0
+
+    r = np.linspace(0, 30, n)
+
+    fr = f(r, nu, a)
+
+    # double fft
+    fftf = abel.fourier_hankel.dft(fr)*n/2
+    fft2f = abel.fourier_hankel.dft(fftf)
+
+    assert_allclose(fr, fft2f, rtol=0, atol=0.5) 
+
+
+
 def test_fourier_hankel_1d_gaussian(n=101):
     gauss = lambda r, r0, sigma: np.exp(-(r-r0)**2/sigma**2)
 
@@ -80,4 +100,5 @@ if __name__ == "__main__":
     test_fourier_hankel_shape()
     test_fourier_hankel_zeros()
     test_fourier_hankel_1d_gaussian()
+    test_fourier_hankel_dft()
     test_fourier_hankel_cyl_gaussian()
