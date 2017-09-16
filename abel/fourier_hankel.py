@@ -21,15 +21,16 @@ import matplotlib.pyplot as plt
 #############################################################################
 
 
-def dht(X, d = 1, nu = 0, axis=-1, b = 1):
+def dht(X, dr=1, nu=0, axis=-1, b=1):
     N = X.shape[axis]
 
     m = np.arange(N)
-    freq = m/(d*N)
+    freq = m/(dr*N)
 
-    F = b * jn(nu, np.outer(b*m, np.pi*m/N)) # *m
+    F = b * jn(nu, np.outer(b*m, np.pi*m/N))  # *m
 
-    return d**2 * np.tensordot(F, X, axes=([1], [axis])) # , freq
+    # needs to be reversed to maintain shape?
+    return dr**2 * np.tensordot(X, F, axes=([1], [axis])) # , freq
 
 
 def dft(X, axis=-1):
@@ -67,7 +68,7 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
 
     if direction == 'inverse':
         fftIM = dft(IM, axis=-1)  # Fourier transform
-        transform_IM = dht(fftIM, nu=nu, axis=axis)*n/2  # Hankel
+        transform_IM = dht(fftIM, dr=dr, nu=nu, axis=axis)*n/2  # Hankel
     else:
         htIM = dht(IM, nu=nu, axis=axis)
         transform_IM = dft(htIM)
