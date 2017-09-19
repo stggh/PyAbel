@@ -27,7 +27,7 @@ def dht(X, dr=1, nu=0, axis=-1, b=1):
     m = np.arange(N)
     freq = m/(dr*N)
 
-    F = b * jn(nu, np.outer(b*m, np.pi*m/N))  # *m
+    F = b * jn(nu, np.outer(b*m, np.pi*m/N)) # *m
 
     # needs to be reversed to maintain shape?
     return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
@@ -42,7 +42,7 @@ def dft(X, dr=1, axis=-1):
 
     X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
     n = X.shape[axis]
-    fftX = np.abs(np.fft.rfft(X, axis=axis))[::2]*2/n
+    fftX = np.abs(np.fft.rfft(X, axis=axis))[::2]*dr
     freq = np.fft.rfftfreq(n, d=dr)
 
     return fftX, freq
@@ -75,7 +75,7 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
         transform_IM *= n/2
     else:
         htIM, freq = dht(IM, nu=nu, axis=axis)
-        transform_IM = dft(htIM, dr=freq[1]-freq[0])
+        transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
