@@ -30,10 +30,10 @@ def dht(X, dr=1, nu=0, axis=-1, b=1):
     F = b * jn(nu, np.outer(b*m, np.pi*m/N))  # *m
 
     # needs to be reversed to maintain shape?
-    return dr**2 * np.tensordot(X, F, axes=([1], [axis])) # , freq
+    return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
 
 
-def dft(X, axis=-1):
+def dft(X, dr=1, axis=-1):
     # discrete Fourier transform
 
     # Build a slicer to remove last element from flipped array
@@ -43,8 +43,9 @@ def dft(X, axis=-1):
     X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
     n = X.shape[axis]
     fftX = np.abs(np.fft.rfft(X, axis=axis))[::2]*2/n
+    freq = np.fft.rfftfreq(n, d=dr)
 
-    return fftX
+    return fftX, freq
 
 
 def fourier_hankel_transform(IM, dr=1, direction='inverse', 
@@ -63,15 +64,18 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     trans_IM : 1D or 2D numpy array
         Inverse or forward Abel transform half-image, the same shape as IM.
     """
+
     IM = np.atleast_2d(IM)
     n = IM.shape[axis]
 
     if direction == 'inverse':
-        fftIM = dft(IM, axis=-1)  # Fourier transform
-        transform_IM = dht(fftIM, dr=dr, nu=nu, axis=axis)*n/2  # Hankel
+        fftIM, freq = dft(IM, dr=dr, axis=-1)  # Fourier transform
+        dr = freq[1] - freq[0]
+        transform_IM, freq = dht(fftIM, dr=dr, nu=nu, axis=axis) # Hankel
+        transform_IM *= n/2
     else:
-        htIM = dht(IM, nu=nu, axis=axis)
-        transform_IM = dft(htIM)
+        htIM, freq = dht(IM, nu=nu, axis=axis)
+        transform_IM = dft(htIM, dr=freq[1]-freq[0])
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
