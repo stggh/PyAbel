@@ -42,7 +42,7 @@ def dft(X, dr=1, axis=-1):
 
     X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
     n = X.shape[axis]
-    fftX = np.abs(np.fft.rfft(X, axis=axis))[::2]*dr
+    fftX = np.abs(np.fft.rfft(X, axis=axis))*dr
     freq = np.fft.rfftfreq(n, d=dr)
 
     return fftX, freq
