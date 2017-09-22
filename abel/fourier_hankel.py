@@ -20,6 +20,34 @@ import matplotlib.pyplot as plt
 #
 #############################################################################
 
+def Hankel2(F, nu=0):
+    """ inverse Hankel transform basic \sum r_i F_i J_nu(2pi r_i i/2n)
+
+    Based on Whitaker C-code in "Image reconstruction: The Abel transform" Ch 5
+        
+    """
+    n = F.shape[-1]
+
+    Nyquist = 1/(2*n)
+
+    f = np.zeros_like(F)
+    i = np.arange(n)
+
+    for j in i:
+       q = Nyquist*j
+       f[:] += q*F[j]*jn(nu, 2*np.pi*q*i[:])
+
+    return f
+
+
+def dht2(X, nu=0, axis=-1):
+    HX = np.zeros_like(X)
+
+    for i, row in enumerate(X):
+        HX[i] = Hankel2(row, nu=nu)
+
+    return HX
+
 
 def dht(X, dr=1, nu=0, axis=-1, b=1):
     N = X.shape[axis]
@@ -27,9 +55,9 @@ def dht(X, dr=1, nu=0, axis=-1, b=1):
     m = np.arange(N)
     freq = m/(dr*N)
 
-    F = b * jn(nu, np.outer(b*m, np.pi*m/N)) # *m
+    F = b * jn(nu, np.outer(b*m, m/N)) # *m
 
-    # needs to be reversed to maintain shape?
+    # dot product swapped to maintain shape(?)
     return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
 
 
