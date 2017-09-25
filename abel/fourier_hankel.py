@@ -20,7 +20,38 @@ import matplotlib.pyplot as plt
 #
 #############################################################################
 
-def Hankel2(F, nu=0):
+
+def Baddour(jz, nu=0):
+    # Baddour transformation matrix Eq. (25) JOSA A32, 611-622 (2015)
+    b = 2/(jn(nu+1, jz) * jn(nu+1, jz) * jz[-1])
+
+    return b * jn(nu, np.outer(jz, jz / jz[-1]))
+
+
+def sample_space(r, rho, nu):
+    # sample size, choose N so that r x rho = jz[-1]
+    jz = jn_zeros(nu, r.size*rho.size)
+    N = np.abs(jz-r[-1]*rho[-1]).argmin()  # set N such that jz[N] ~ R
+    jz = jz[:N+1]
+    return jz
+
+
+def dhtB(r, func, a, nu=0, axis=-1):
+
+    # sample space  r x rho = jz[-1]
+
+    jz = sample_space(r, r, nu=nu)
+
+    r_sample = jz*r[-1]/jz[-1]
+
+    X = func(r_sample, a)
+
+    T = Baddour(jz, nu)
+
+    return jz, np.tensordot(T, X, axes=([1], [axis]))*r[-1]**2/jz[-1]
+
+
+def Whitaker(F, nu=0):
     """ inverse Hankel transform basic \sum r_i F_i J_nu(2pi r_i i/2n)
 
     Based on Whitaker C-code in "Image reconstruction: The Abel transform" Ch 5
@@ -40,11 +71,11 @@ def Hankel2(F, nu=0):
     return f
 
 
-def dht2(X, nu=0, axis=-1):
+def dhtW(X, nu=0, axis=-1):
     HX = np.zeros_like(X)
 
     for i, row in enumerate(X):
-        HX[i] = Hankel2(row, nu=nu)
+        HX[i] = Whitaker(row, nu=nu)
 
     return HX
 
