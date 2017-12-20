@@ -170,9 +170,9 @@ def linbasex_transform_full(IM, proj_angles=[0, np.pi/2],
 
     rows, cols = IM.shape
 
-    if rows != cols:
-        raise ValueError('image has shape ({}, {}), '.format(rows, cols) +
-                         'must be square for a "linbasex" transform')
+    # if rows != cols:
+    #     raise ValueError('image has shape ({}, {}), '.format(rows, cols) +
+    #                      'must be square for a "linbasex" transform')
 
     # generate basis or read from file if available
     Basis = abel.tools.basis.get_bs_cached("linbasex", cols,
