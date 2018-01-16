@@ -84,12 +84,13 @@ def dht(X, dr=1, nu=0, axis=-1, b=1):
     N = X.shape[axis]
 
     m = np.arange(N)
+    n = np.arange(N)
+
     freq = m/(dr*N)
 
-    F = b * jn(nu, np.outer(b*m, m/N)) # *m
+    F = b * jn(nu, np.outer(b*m, n/N)*m
 
-    # dot product swapped to maintain shape(?)
-    return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
+    return dr**2 * np.tensordot(F, X, axes=([1], [axis])), freq
 
 
 def dft(X, dr=1, axis=-1):
