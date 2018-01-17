@@ -81,6 +81,7 @@ def dhtW(X, nu=0, axis=-1):
 
 
 def dht(X, dr=1, nu=0, axis=-1, b=1):
+    # discrete Hankel transform
     N = X.shape[axis]
 
     m = np.arange(N)
@@ -101,9 +102,9 @@ def dft(X, dr=1, axis=-1):
     slc[axis] = slice(None,-1)
 
     X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
-    n = X.shape[axis]
+
     fftX = np.abs(np.fft.rfft(X, axis=axis))*dr
-    freq = np.fft.rfftfreq(n, d=dr)
+    freq = np.fft.rfftfreq(X.shape[axis], d=dr)
 
     return fftX, freq
 
@@ -128,17 +129,13 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     IM = np.atleast_2d(IM)
     n = IM.shape[axis]
 
-    import matplotlib.pyplot as plt
-
     if direction == 'inverse':
-        fftIM, freq = dft(IM, dr=dr, axis=-1)  # Fourier transform
+        fftIM, freq = dft(IM, dr=dr, axis=axis)  # Fourier transform
         dr = freq[1] - freq[0]
         transform_IM, freq = dht(fftIM, dr=dr, nu=nu, axis=axis) # Hankel
-        transform_IM *= n/2
     else:
-        htIM, freq = dht(IM, nu=nu, axis=axis)
-        transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])
-        transform_IM /= n
+        htIM, freq = dht(IM, dr=dr, nu=nu, axis=axis)  # Hankel
+        transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])  # fft
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
