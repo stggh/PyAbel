@@ -4,10 +4,7 @@ from __future__ import division
 from __future__ import unicode_literals
 import numpy as np
 import abel
-from scipy.special import jn, jn_zeros
-from scipy.interpolate import UnivariateSpline
-
-import matplotlib.pyplot as plt
+from scipy.special import jn
 
 #############################################################################
 #
@@ -20,76 +17,15 @@ import matplotlib.pyplot as plt
 #
 #############################################################################
 
-
-def Baddour(jz, nu=0):
-    # Baddour transformation matrix Eq. (25) JOSA A32, 611-622 (2015)
-    b = 2/(jn(nu+1, jz) * jn(nu+1, jz) * jz[-1])
-
-    return b * jn(nu, np.outer(jz, jz / jz[-1]))
-
-
-def sample_space(r, rho, nu):
-    # sample size, choose N so that r x rho = jz[-1]
-    jz = jn_zeros(nu, r.size*rho.size)
-    N = np.abs(jz-r[-1]*rho[-1]).argmin()  # set N such that jz[N] ~ R
-    jz = jz[:N+1]
-    return jz
-
-
-def dhtB(r, func, a, nu=0, axis=-1):
-
-    # sample space  r x rho = jz[-1]
-
-    jz = sample_space(r, r, nu=nu)
-
-    r_sample = jz*r[-1]/jz[-1]
-
-    X = func(r_sample, a)
-
-    T = Baddour(jz, nu)
-
-    return jz, np.tensordot(T, X, axes=([1], [axis]))*r[-1]**2/jz[-1]
-
-
-def Whitaker(F, nu=0):
-    """ inverse Hankel transform basic \sum r_i F_i J_nu(2pi r_i i/2n)
-
-    Based on Whitaker C-code in "Image reconstruction: The Abel transform" Ch 5
-        
-    """
-    n = F.shape[-1]
-
-    Nyquist = 1/(2*n)
-
-    f = np.zeros_like(F)
-    i = np.arange(n)
-
-    for j in i:
-       q = Nyquist*j
-       f[:] += q*F[j]*jn(nu, 2*np.pi*q*i[:])
-
-    return f
-
-
-def dhtW(X, nu=0, axis=-1):
-    HX = np.zeros_like(X)
-
-    for i, row in enumerate(X):
-        HX[i] = Whitaker(row, nu=nu)
-
-    return HX
-
-
 def dht(X, dr=1, nu=0, axis=-1, b=1):
     # discrete Hankel transform
     N = X.shape[axis]
 
-    m = np.arange(N)
     n = np.arange(N)
 
-    freq = m/dr/N
+    freq = n/dr/N
 
-    F = b * jn(nu, np.outer(b*m, n/N)) * m
+    F = b * jn(nu, np.outer(b*n, n/N)) * n
 
     return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
 
@@ -133,8 +69,8 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
 
     if direction == 'inverse':
         fftIM, freq = dft(IM, dr=dr, axis=axis)  # Fourier transform
-        dr = freq[1] - freq[0]
-        transform_IM, freq = dht(fftIM, dr=dr, nu=nu, axis=axis) # Hankel
+        # Hankel
+        transform_IM, freq = dht(fftIM, dr=freq[1]-freq[0], nu=nu, axis=axis)
     else:
         htIM, freq = dht(IM, dr=dr, nu=nu, axis=axis)  # Hankel
         transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])  # fft
@@ -143,4 +79,4 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
 
-    return transform_IM  # , freq
+    return transform_IM, freq
