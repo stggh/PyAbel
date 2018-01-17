@@ -87,9 +87,9 @@ def dht(X, dr=1, nu=0, axis=-1, b=1):
     m = np.arange(N)
     n = np.arange(N)
 
-    freq = m/(dr*N)
+    freq = m/dr/N
 
-    F = b * jn(nu, np.outer(b*m, n/N))*m
+    F = b * jn(nu, np.outer(b*m, n/N)) * m
 
     return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
 
@@ -99,11 +99,11 @@ def dft(X, dr=1, axis=-1):
 
     # Build a slicer to remove last element from flipped array
     slc = [slice(None)] * len(X.shape)
-    slc[axis] = slice(None,-1)
+    slc[axis] = slice(None, -1)
 
-    X = np.append(np.flip(X,axis)[slc], X, axis=axis)  # make symmetric
+    X = np.append(np.flip(X, axis)[slc], X, axis=axis)  # make symmetric
 
-    fftX = np.abs(np.fft.rfft(X, axis=axis))*dr
+    fftX = np.abs(np.fft.rfft(X, axis=axis)) * dr
     freq = np.fft.rfftfreq(X.shape[axis], d=dr)
 
     return fftX, freq
@@ -115,11 +115,14 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     Parameters
     ----------
     IM : 1D or 2D numpy array
-        Right-side half-image (or quadrant).
+        Right-side half-image (or quadrant)
+
     dr : float
-        Sampling size (=1 for pixel images), used for Jacobian scaling.
+        Sampling size (=1 for pixel images), used for Jacobian scaling
+
     direction : str
         'inverse' or 'forward' Abel transform
+
     Returns
     -------
     trans_IM : 1D or 2D numpy array
@@ -127,7 +130,6 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     """
 
     IM = np.atleast_2d(IM)
-    n = IM.shape[axis]
 
     if direction == 'inverse':
         fftIM, freq = dft(IM, dr=dr, axis=axis)  # Fourier transform
@@ -136,8 +138,9 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     else:
         htIM, freq = dht(IM, dr=dr, nu=nu, axis=axis)  # Hankel
         transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])  # fft
+        freq *= 2*np.pi
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
 
-    return transform_IM #, freq
+    return transform_IM  # , freq
