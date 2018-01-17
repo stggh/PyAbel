@@ -88,9 +88,9 @@ def dht(X, dr=1, nu=0, axis=-1, b=1):
 
     freq = m/(dr*N)
 
-    F = b * jn(nu, np.outer(b*m, n/N)*m
+    F = b * jn(nu, np.outer(b*m, n/N))*m
 
-    return dr**2 * np.tensordot(F, X, axes=([1], [axis])), freq
+    return dr**2 * np.tensordot(X, F, axes=([1], [axis])), freq
 
 
 def dft(X, dr=1, axis=-1):
@@ -128,6 +128,8 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     IM = np.atleast_2d(IM)
     n = IM.shape[axis]
 
+    import matplotlib.pyplot as plt
+
     if direction == 'inverse':
         fftIM, freq = dft(IM, dr=dr, axis=-1)  # Fourier transform
         dr = freq[1] - freq[0]
@@ -136,8 +138,9 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     else:
         htIM, freq = dht(IM, nu=nu, axis=axis)
         transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])
+        transform_IM /= n
 
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
 
-    return transform_IM
+    return transform_IM, freq
