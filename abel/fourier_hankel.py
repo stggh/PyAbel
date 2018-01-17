@@ -143,4 +143,4 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
 
-    return transform_IM, freq
+    return transform_IM #, freq
