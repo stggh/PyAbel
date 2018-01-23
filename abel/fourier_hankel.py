@@ -70,7 +70,8 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     if direction == 'inverse':
         fftIM, freq = dft(IM, dr=dr, axis=axis)  # Fourier transform
         # Hankel
-        transform_IM, freq = dht(fftIM, dr=freq[1]-freq[0], nu=nu, axis=axis)
+        dr = freq[1]-freq[0]
+        transform_IM, freq = dht(fftIM, dr=dr, nu=nu, axis=axis)
     else:
         htIM, freq = dht(IM, dr=dr, nu=nu, axis=axis)  # Hankel
         transform_IM, freq = dft(htIM, dr=freq[1]-freq[0])  # fft
@@ -79,4 +80,4 @@ def fourier_hankel_transform(IM, dr=1, direction='inverse',
     if transform_IM.shape[0] == 1:
         transform_IM = transform_IM[0]   # flatten to a vector
 
-    return transform_IM, freq
+    return transform_IM # , freq

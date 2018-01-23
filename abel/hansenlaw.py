@@ -5,6 +5,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+<<<<<<< HEAD
+=======
+from scipy.ndimage.interpolation import shift
+>>>>>>> push for rebase
 
 #############################################################################
 # hansenlaw - a recursive method forward/inverse Abel transform algorithm

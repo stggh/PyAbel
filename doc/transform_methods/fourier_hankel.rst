@@ -30,4 +30,4 @@ Example
 
 Citation
 --------
-
+[1] `N. Baddour and U. Chouinard "Theory and operational rules for the discrete Hankel transform" J. Opt. Soc. Am. A 32, 611-622 (2015) <http://dx.doi.org/10.1364/JOSAA.32.000611>`_
