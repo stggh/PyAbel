@@ -415,6 +415,7 @@ class Transform(object):
         self.Beta = Beta
         self.projection = QLz
         self.radial = radial
+        self.angular_integration = (radial, Beta[0])
             
 
     def _abel_transform_image_by_quadrant(self, **transform_options):

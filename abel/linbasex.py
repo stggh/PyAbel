@@ -171,7 +171,8 @@ def linbasex_transform_full(IM, proj_angles=[0, np.pi/2],
     rows, cols = IM.shape
 
     if cols % 2 == 0:
-        raise ValueError('image width ({}) must be odd and equal to the height'.format(cols))
+        raise ValueError('image width ({}) must be odd and equal to the height'
+                         .format(cols))
 
     if rows != cols:
         raise ValueError('image has shape ({}, {}), '.format(rows, cols) +
@@ -238,7 +239,6 @@ def _linbasex_transform_with_basis(IM, Basis, proj_angles=[0, np.pi/2],
 
     radial = np.linspace(clip, cols//2, len(Beta[0]))
 
-    # Fix Me! Issue #202 the correct scaling factor for inv_IM intensity?
     return inv_IM, radial, Beta, QLz
 
 linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
@@ -264,7 +264,8 @@ def _SL(i, x, y, Beta_convol, index, legendre_orders):
     r = np.sqrt(x**2 + y**2 + 0.1)  # + 0.1 to avoid divison by zero.
 
     # normalize: divison by circumference.
-    BB = np.interp(r, index, Beta_convol[i, :], left=0)/(2*np.pi*r)
+    # stggh 10Aug18 /r to agree with intensities from other methods
+    BB = np.interp(r, index, Beta_convol[i, :], left=0)/(2*np.pi*r*r)
 
     return BB*eval_legendre(legendre_orders[i], x/r)
 
