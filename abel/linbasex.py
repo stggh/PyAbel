@@ -112,7 +112,7 @@ _linbasex_parameter_docstring = \
        distribution contain all the information one can get from an experiment.
        For the case :attr:`legendre_orders=[0, 2]`:
 
-           Beta[0] vs radius -> speed distribution
+           Beta[0] vs radius -> normalized speed distribution
 
            Beta[1] vs radius -> anisotropy of each Newton sphere.
 
@@ -129,47 +129,11 @@ _clip = None
 
 
 def linbasex_transform(IM, basis_dir=None, proj_angles=[0, np.pi/2],
-                       legendre_orders=[0, 2], radial_step=1, smoothing=0,
-                       rcond=0.0005, threshold=0.2, return_Beta=False, clip=0,
-                       norm_range=(0, -1), direction="inverse", verbose=False,
-                       dr=None):
-    """wrapper function for linebasex to process supplied quadrant-image as a full-image.
-
-    PyAbel transform functions operate on the right side of an image.
-    Here we follow the `basex` technique of duplicating the right side to
-    the left re-forming the whole image.
-
-    """
-    IM = np.atleast_2d(IM)
-
-    quad_rows, quad_cols = IM.shape
-    full_image = abel.tools.symmetry.put_image_quadrants((IM, IM, IM, IM),
-                 original_image_shape=(quad_rows*2-1, quad_cols*2-1))
-
-    # inverse Abel transform
-    recon, radial, Beta, QLz = linbasex_transform_full(full_image,
-                               basis_dir=basis_dir, proj_angles=proj_angles,
-                               legendre_orders=legendre_orders,
-                               radial_step=radial_step, smoothing=smoothing,
-                               threshold=threshold, clip=clip,
-                               norm_range=norm_range,
-                               verbose=verbose)
-
-    # unpack right-side
-    inv_IM = abel.tools.symmetry.get_image_quadrants(recon)[0]
-
-    if return_Beta:
-        return inv_IM, radial, Beta, QLz
-    else:
-        return inv_IM
-
-
-def linbasex_transform_full(IM, basis_dir=None, proj_angles=[0, np.pi/2],
-                            legendre_orders=[0, 2],
-                            radial_step=1, smoothing=0,
-                            rcond=0.0005, threshold=0.2, clip=0,
-                            return_Beta=False, norm_range=(0, -1),
-                            direction="inverse", verbose=False):
+                       legendre_orders=[0, 2],
+                       radial_step=1, smoothing=0,
+                       rcond=0.0005, threshold=0.2, clip=0,
+                       return_Beta=False, norm_range=(0, -1),
+                       direction="inverse", verbose=False):
     """interface function that fetches/calculates the Basis and
        then evaluates the linbasex inverse Abel transform for the image.
 
@@ -179,25 +143,22 @@ def linbasex_transform_full(IM, basis_dir=None, proj_angles=[0, np.pi/2],
 
     rows, cols = IM.shape
 
-    if cols % 2 == 0:
-        raise ValueError('image width ({}) must be odd and equal to the height'
-                         .format(cols))
-
-    if rows != cols:
-        raise ValueError('image has shape ({}, {}), '.format(rows, cols) +
-                         'must be square for a "linbasex" transform')
-
     # generate basis or read from file if available
-    _basis = get_bs_cached(cols, basis_dir=basis_dir, proj_angles=proj_angles,
+    _basis = get_bs_cached(rows, basis_dir=basis_dir, proj_angles=proj_angles,
                   legendre_orders=legendre_orders, radial_step=radial_step,
                   clip=clip, verbose=verbose)
 
-    return _linbasex_transform_with_basis(IM, _basis, proj_angles=proj_angles,
+    inv_IM, radial, Beta, QLz = _linbasex_transform_with_basis(IM,
+                                    _basis, proj_angles=proj_angles,
                                     legendre_orders=legendre_orders,
                                     radial_step=radial_step,
                                     rcond=rcond, smoothing=smoothing,
                                     threshold=threshold, clip=clip,
                                     norm_range=norm_range)
+    if return_Beta:
+        return inv_IM, radial, Beta, QLz
+    else:
+        return inv_IM    # to be compatiable with the other PyAbel methods
 
 
 def _linbasex_transform_with_basis(IM, Basis, proj_angles=[0, np.pi/2],
@@ -218,20 +179,28 @@ def _linbasex_transform_with_basis(IM, Basis, proj_angles=[0, np.pi/2],
     # How many projections
     proj = len(proj_angles)
 
-    QLz = np.zeros((proj, cols))  # array for projections.
+    QLz = np.zeros((proj, rows))  # array for projections.
 
-    # Rotate and project VMI-image for each angle (as many as projections)
-    # if proj_angles == [0, np.pi/2]:
-    #     # If coordinates of the detector coincide with the projection
-    #     # directions unnecessary rotations are avoided
-    #     # i.e. proj_angles=[0, np.pi/2] degrees
-    #     QLz[0] = np.sum(IM, axis=1)
-    #     QLz[1] = np.sum(IM, axis=0)
-    # else:
+    pad_IM = IM
+    if proj > 1: 
+        # pad for rotation
+        # center of mass gives image fraction = whole, half, or quadrant
+        cm = scipy.ndimage.measurements.center_of_mass(IM)
+        print('----', cm)
+        if cm[1] < cols/3:
+            # half image 
+            pad_IM = np.concatenate((np.zeros_like(IM[:, :-1]), IM), axis=1)
+            print(f'pad_IMh={pad_IM.shape}')
+            if cm[0] > rows*0.6:
+                # quadrant image 
+                pad_IM = np.concatenate((pad_IM, np.zeros_like(pad_IM)),
+                                         axis=0)
+                print(f'pad_IMq={pad_IM.shape}')
+
     for i in range(proj):
-        Rot_IM = scipy.ndimage.interpolation.rotate(IM,
+        Rot_IM = scipy.ndimage.interpolation.rotate(pad_IM,
                        proj_angles[i]*180/np.pi, axes=(1, 0), reshape=False)
-        QLz[i, :] = np.sum(Rot_IM, axis=1)
+        QLz[i, :] = np.sum(Rot_IM, axis=1)[:rows]
 
     # arrange all projections for input into "lstsq"
     bb = np.concatenate(QLz, axis=0)
@@ -244,13 +213,12 @@ def _linbasex_transform_with_basis(IM, Basis, proj_angles=[0, np.pi/2],
     Beta = _single_Beta_norm(Beta_convol, threshold=threshold,
                              norm_range=norm_range)
 
-    radial = np.linspace(clip, cols//2, len(Beta[0]))
+    radial = np.linspace(clip, rows//2, len(Beta[0]))
 
-    # Fix Me! Issue #202 the correct scaling factor for inv_IM intensity?
     return inv_IM, radial, Beta, QLz
 
 
-linbasex_transform_full.__doc__ = _linbasex_parameter_docstring
+linbasex_transform.__doc__ = _linbasex_parameter_docstring
 
 
 def _beta_solve(Basis, bb, pol, rcond=0.0005):
@@ -262,18 +230,18 @@ def _beta_solve(Basis, bb, pol, rcond=0.0005):
     # solve equation
     Sol = np.linalg.lstsq(Basis, bb, rcond)
 
-    # arrange solutions into subarrays for each β.
+    # arrange solutions into subarrays for each Beta.
     Beta = Sol[0].reshape((pol, len(Sol[0])//pol))
 
     return Beta
 
 
 def _SL(i, x, y, Beta_convol, index, legendre_orders):
-    """Calculates interpolated β(r), where r= radius"""
+    """Calculates interpolated Beta(r), where r= radius"""
     r = np.sqrt(x**2 + y**2 + 0.1)  # + 0.1 to avoid divison by zero.
 
     # normalize: divison by circumference.
-    # @stggh 2/r to correctly normalize intensity cf O2 PES
+    # @stggh 1/2r to correctly normalize intensity cf other PyAbel methods
     BB = np.interp(r, index, Beta_convol[i, :], left=0)/(4*np.pi*r*r)
 
     return BB*eval_legendre(legendre_orders[i], x/r)
@@ -288,18 +256,18 @@ def _Slices(Beta, legendre_orders, smoothing=0):
     NP = len(Beta[0])  # number of points in 3_d plot.
     index = range(NP)
 
-    Beta_convol = np.zeros((pol, NP))
     Slice_3D = np.zeros((pol, 2*NP, 2*NP))
 
     # Convolve Beta's with smoothing function
     if smoothing > 0:
         # smoothing function
-        Basis_s = np.fromfunction(lambda i: np.exp(-(i - (NP)/2)**2 /
+        Basis_s = np.fromfunction(lambda i: np.exp(-(i - NP/2)**2 /
                                   (2*smoothing**2))/(smoothing*2.5), (NP,))
+        Beta_convol = np.zeros((pol, NP))
         for i in range(pol):
             Beta_convol[i] = np.convolve(Basis_s, Beta[i], mode='same')
     else:
-        Beta_convol = Beta
+        Beta_convol = Beta 
 
     # Calculate ordered slices:
     for i in range(pol):
@@ -311,7 +279,8 @@ def _Slices(Beta, legendre_orders, smoothing=0):
     return Slice, Beta_convol
 
 
-def int_beta(Beta, radial_step=1, threshold=0.1, regions=None):
+# not used
+def int_Beta(Beta, radial_step=1, threshold=0.1, regions=None):
     """Integrate beta over a range of Newton spheres.
 
     Parameters
@@ -400,15 +369,17 @@ def _bas(ord, angle, COS, TRI):
     return basis_vec
 
 
-def _bs_linbasex(cols, proj_angles=[0, np.pi/2], legendre_orders=[0, 2],
+def _bs_linbasex(rows, proj_angles=[0, np.pi/2], legendre_orders=[0, 2],
                  radial_step=1, clip=0):
+    """Calculation of Base vectors.
 
+    """
     pol = len(legendre_orders)
     proj = len(proj_angles)
 
-    # Calculation of Base vectors
-    # Define triangular matrix containing columns :math:`x/y` (representing :math:`\cos(\theta))`.
-    n = cols//2 + cols % 2
+    # Define triangular matrix containing columns :math:`x/y` 
+    # (representing :math:`\cos(\theta))`.
+    n = rows//2 + rows % 2
     Index = np.indices((n, n))
     Index[:, 0, 0] = 1
     cos = Index[0]*np.tri(n, n, k=0)[::-1, ::-1]/np.diag(Index[0])
@@ -420,11 +391,12 @@ def _bs_linbasex(cols, proj_angles=[0, np.pi/2], legendre_orders=[0, 2],
 
     # radial_step: use only each radial_step other vector.
     # Keep the base vector with full span
-    COS = COS[:, ::-radial_step]
-    TRI = TRI[:, ::-radial_step]
+    if radial_step != 1:
+        COS = COS[:, ::-radial_step]
+        TRI = TRI[:, ::-radial_step]
 
-    COS = COS[:, ::-1]  # rearrange base vectors again in ascending order
-    TRI = TRI[:, ::-1]
+        COS = COS[:, ::-1]  # rearrange base vectors again in ascending order
+        TRI = TRI[:, ::-1]
 
     if clip > 0:
         # clip first vectors (smallest Newton spheres) to avoid singularities
@@ -449,21 +421,21 @@ def _bs_linbasex(cols, proj_angles=[0, np.pi/2], legendre_orders=[0, 2],
     return Basis
 
 
-def get_bs_cached(cols, basis_dir=None, legendre_orders=[0, 2],
+def get_bs_cached(rows, basis_dir=None, legendre_orders=[0, 2],
                   proj_angles=[0, np.pi/2],
                   radial_step=1, clip=0, verbose=False):
     """load basis set from disk, generate and store if not available.
 
     Checks whether file:
-    ``linbasex_basis_{cols}_{legendre_orders}_{proj_angles}_{radial_step}_{clip}*.npy`` is present in `basis_dir`
+    ``linbasex_basis_{rows}_{legendre_orders}_{proj_angles}_{radial_step}_{clip}*.npy`` is present in `basis_dir`
 
     Either, read basis array or generate basis, saving it to the file.
 
 
     Parameters
     ----------
-    cols : int
-        width of image
+    rows : int
+        height of image
 
     basis_dir : str
         path to the directory for saving / loading the basis
@@ -486,10 +458,10 @@ def get_bs_cached(cols, basis_dir=None, legendre_orders=[0, 2],
     Returns
     -------
     D : tuple (B, Bpol)
-       of ndarrays B (pol, proj, cols, cols) Bpol (pol, proj)
+       of ndarrays B (pol, proj, rows, rows) Bpol (pol, proj)
 
     file.npy: file
-       saves basis to file name ``linbasex_basis_{cols}_{legendre_orders}_{proj_angles}_{radial_step}_{clip}.npy``
+       saves basis to file name ``linbasex_basis_{rows}_{legendre_orders}_{proj_angles}_{radial_step}_{clip}.npy``
 
     """
 
@@ -505,7 +477,7 @@ def get_bs_cached(cols, basis_dir=None, legendre_orders=[0, 2],
 
     if _basis is not None:
         # check basis array sizes, warning may not be unique
-        if _basis.shape == (2*cols, cols+1):
+        if _basis.shape == (2*rows, rows+1):
             if _los == los and _pas == pas and _radial_step == radial_step and\
                _clip == clip:
                 if verbose:
@@ -513,7 +485,7 @@ def get_bs_cached(cols, basis_dir=None, legendre_orders=[0, 2],
                 return _basis
 
     # Fix Me! not a simple unique naming mechanism
-    basis_name = "linbasex_basis_{}_{}_{}_{}_{}.npy".format(cols, los, pas,
+    basis_name = "linbasex_basis_{}_{}_{}_{}_{}.npy".format(rows, los, pas,
                                                             radial_step, clip)
 
     _los = los
@@ -532,7 +504,7 @@ def get_bs_cached(cols, basis_dir=None, legendre_orders=[0, 2],
         print("A suitable basis for linbasex was not found.\n"
               "A new basis will be generated.")
 
-    _basis = _bs_linbasex(cols, proj_angles=proj_angles,
+    _basis = _bs_linbasex(rows, proj_angles=proj_angles,
                      legendre_orders=legendre_orders, radial_step=radial_step,
                      clip=clip)
 
