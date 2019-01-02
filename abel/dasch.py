@@ -17,6 +17,8 @@ from scipy.linalg import inv
 #        https://www.osapublishing.org/ao/abstract.cfm?uri=ao-31-8-1146
 #    see also discussion in PR #155  https://github.com/PyAbel/PyAbel/pull/155
 #
+# 2018-11    Oliver Haas 2nd order convergence
+#            https://github.com/oliverhaas/PyAbel
 # 2016-03-25 Dan Hickstein - one line Abel transform
 # 2016-03-24 Steve Gibson - Python code framework
 # 2015-12-29 Dhrubajyoti Das - original three_point code and
@@ -109,7 +111,7 @@ def _dasch_transform(IM, basis_dir='.', dr=1, direction="inverse",
     if cols < 2 and method == "two_point":
         raise ValueError('"two_point" requires image width (cols) > 2')
 
-    if cols < 3 and method == "three_point":
+    if cols < 3 and method[:11] == "three_point":
         raise ValueError('"three_point" requires image width (cols) > 3')
 
     _D = get_bs_cached(method, cols, basis_dir=basis_dir, verbose=verbose)
@@ -250,6 +252,85 @@ def _bs_three_point(cols):
     return D
 
 
+def _bs_three_point_Haas(cols):
+    """basis function for three_point.
+    
+    Parameters
+    ----------
+    cols : int
+        width of the image
+
+    modified by Oliver Haas (github.com/oliverhaas) to be consistently second
+    order approximation and deal with non-zero upper end of the data.
+    """
+
+    # finite difference derivative stencil
+    FD = np.zeros((cols, cols))
+    FD[0, 0:3] = [-1.5, 2., -0.5]
+    FD[-1, -3::] = [0.5, -2., 1.5]
+    I = np.arange(cols)
+    FD[I[1:-1], I[:-2]] = -0.5
+    FD[I[1:-1], I[2:]] = 0.5
+
+    # finite difference second derivative stencil
+    FD2 = np.zeros((cols,cols))
+    FD2[0, 0:4] = [2., -5., 4., -1.]
+    FD2[-1, -4::] = [-1., 4., -5., 2.]
+    I = np.arange(cols)
+    FD2[I[1:-1], I[:-2]] = 1.
+    FD2[I[1:-1], I[1:-1]] = -2.
+    FD2[I[1:-1], I[2:]] = 1.
+
+    # Analytical integration coefficients
+    def c0(i, j):
+        return np.log(((np.sqrt((2*j + 1)**2 - 4*i**2) + 2*j + 1))/
+                       (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1))
+
+    def c1(i, j):
+        return 0.5*(np.sqrt((2*j+1)**2 - 4*i**2)\
+               - np.sqrt((2*j-1)**2 - 4*i**2)) - j*c0(i,j)
+
+    def c0diag(i):
+        return np.log((np.sqrt(1 + 4*i) + 2*i + 1)/(2*i))
+
+    def c1diag(i):
+        return 0.5*np.sqrt(1 + 4*i) - i*c0diag(i)
+
+    def c0end(i, j):
+        return np.log((2*np.sqrt(j**2 - i**2) + 2*j)/
+                      (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1))
+
+    def c1end(i, j):
+        return (np.sqrt(j**2 - i**2) - 0.5*np.sqrt((2*j-1)**2 - 4*i**2))\
+                - j*c0end(i,j)
+
+
+    # Analytical integration matrix
+    D0 = np.zeros((cols, cols))
+    D1 = np.zeros((cols, cols))
+
+    # diagonal
+    I = np.arange(1, cols-1)
+    D0[I,I] = c0diag(I)
+    D1[I,I] = c1diag(I)
+    D0[0,0] = 0.
+    D1[0,0] = 0.5
+
+    # triangle bulk
+    Iut, Jut = np.triu_indices(cols-1, k=1)
+    D0[Iut, Jut] = c0(Iut, Jut)
+    D1[Iut, Jut] = c1(Iut, Jut)
+
+    # end
+    Iend = np.arange(cols-1)
+    D0[Iend,-1] = c0end(Iend, cols-1)
+    D1[Iend,-1] = c1end(Iend, cols-1)
+
+    D = -(D0.dot(FD) + D1.dot(FD2))/np.pi
+
+    return D
+
+
 def _bs_onion_peeling(cols):
     """deconvolution function for onion_peeling.
 
@@ -292,8 +373,8 @@ def get_bs_cached(method, cols, basis_dir='.', verbose=False):
     Parameters
     ----------
     method : str
-        Abel transform method ``onion_peeling``, ``three_point``, or
-        ``two_point``
+        Abel transform method ``onion_peeling``, ``three_point``, 
+        or ``two_point``
 
     cols : int
         width of image
@@ -330,8 +411,9 @@ def get_bs_cached(method, cols, basis_dir='.', verbose=False):
     D_name = "{}_basis_{}.npy".format(method, cols)
     D_generator = {
         "onion_peeling": abel.dasch._bs_onion_peeling,
-        "three_point": abel.dasch._bs_three_point,
-        "two_point": abel.dasch._bs_two_point
+        "three_point": abel.dasch._bs_three_point_Haas,
+        "two_point": abel.dasch._bs_three_point,
+        #"two_point": abel.dasch._bs_two_point
     }
 
     _method = method
